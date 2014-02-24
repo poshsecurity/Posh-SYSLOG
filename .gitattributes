@@ -20,6 +20,10 @@
 *.PDF	 diff=astextplain
 *.rtf	 diff=astextplain
 *.RTF	 diff=astextplain
-*.ps1	 diff=astextplain
-*.ini	 diff=astextplain
-*.psm1	 diff=astextplain
+
+
+#Fix PowerShell and INI Files - Kieran Jacobsen
+*.ps1	 text eol=crlf diff
+*.ini	 text eol=crlf diff
+*.psm1	 text eol=crlf diff
+*.psd1	 text eol=crlf diff
