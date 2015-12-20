@@ -1,8 +1,7 @@
 ﻿Import-Module $PSScriptRoot\PowerShellSyslog.psm1 -Force
 
 Describe 'Send-SyslogMessage' {
-    Mock Get-Date { return New-Object datetime(2000,1,1) }
-    $TestHostname = 'TestRig'
+    Mock -ModuleName PowerShellSyslog Get-Date { return (New-Object datetime(2000,1,1)) }
 
     Context 'Parameter Validation' {
         It 'Should not accept a null value for the server' {
@@ -20,10 +19,35 @@ Describe 'Send-SyslogMessage' {
             {Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility $null} | Should Throw 'Cannot convert null to type "Syslog_Facility"'
         }
 
-        It 'Should not accept a null value for the facility' {
-            {Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'} | Should Throw ''
+        It 'Should not accept a null value for the hostname' {
+            {Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname $null} | Should Throw 'The argument is null or empty'
         }
 
+        It 'Should not accept a null value for the application name' {
+            {Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -ApplicationName $null} | Should Throw 'The argument is null or empty'
+        }
+
+        It 'Should not accept a null value for the timestamp' {
+            {Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Timestamp $null} | Should Throw 'Cannot convert null to type "System.DateTime"'
+        }
+
+        It 'Should not accept a null value for the UDP port' {
+            {Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -UDPPort $null} | Should Throw 'Cannot validate argument on parameter'
+        }
+
+        It 'Should not accept an invalid value for the UDP port' {
+            {Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -UDPPort 456789789789} | Should Throw 'Error: "Value was either too large or too small for a UInt16.'
+        }
+
+        <#
+        .PARAMETER RFC3164
+            Send an RFC3164 fomatted message instead of RFC5424.
+
+	        $ProcessID = $PID,
+                $MessageID = '-',
+                $StructuredData = '-',
+
+        #>
     }
 
     Context 'Output' {
@@ -52,11 +76,15 @@ Describe 'Send-SyslogMessage' {
 
     Context 'Verbose Information - RFC 3164' {
         It 'Should send RFC 3164 formatted message (checked via verbose output)' {
-            Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Timestamp (Get-Date) -Hostname $TestHostname -Verbose | Should be $null
+            Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Verbose | Should be $null
         }
     }
 
     Context 'Verbose Information - RFC 5424' {
+    
+    }
+
+    Context 'Determine hostname correctly' {
     
     }
 }
