@@ -3,6 +3,13 @@
 Describe 'Send-SyslogMessage' {
     Mock -ModuleName PowerShellSyslog Get-Date { return (New-Object datetime(2000,1,1)) }
 
+    Mock -ModuleName PowerShellSyslog Get-NetIPAddress {return $null}
+
+    Mock -ModuleName PowerShellSyslog Test-NetConnection {return 'DHCP'}
+
+    $ENV:Computername = 'TestHostname'
+    $ENV:userdnsdomain = $null
+
     Context 'Parameter Validation' {
         It 'Should not accept a null value for the server' {
             {Send-SyslogMessage -Server $null -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'} | Should Throw 'The argument is null or empty'
@@ -39,6 +46,18 @@ Describe 'Send-SyslogMessage' {
             {Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -UDPPort 456789789789} | Should Throw 'Error: "Value was either too large or too small for a UInt16.'
         }
 
+        It 'If the -RFC3164 is specified, reject ProcessID parameter' {
+        
+        }
+
+        It 'If the -RFC3164 is specified, reject MessageID parameter' {
+        
+        }
+
+        It 'If the -RFC3164 is specified, reject StructuredData parameter' {
+        
+        }
+
         <#
 
         .PARAMETER RFC3164
@@ -59,33 +78,45 @@ Describe 'Send-SyslogMessage' {
 
     Context 'Verbose Information - Not RFC Specific' {
         It 'verbosely should print the correct priority of 0 if Facility is Kern and Severity is Emergency' {
-            (Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Emergency' -Facility 'kern' -Verbose 4>&1)[1] | Should Match 'Priority is 0'
+            (Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Emergency' -Facility 'kern' -Verbose 4>&1)[1] | Should be 'Priority is 0'
         }
 
         It 'verbosely should print the correct priority of 7 if Facility is Kern and Severity is Debug' {
-            (Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'debug' -Facility 'kern' -Verbose 4>&1)[1] | Should Match 'Priority is 7'
+            (Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'debug' -Facility 'kern' -Verbose 4>&1)[1] | Should be 'Priority is 7'
         }
 
         It 'verbosely should print the correct priority of 24 if Facility is daemon and Severity is Emergency' {
-            (Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Emergency' -Facility 'daemon' -Verbose 4>&1)[1] | Should Match 'Priority is 24'
+            (Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Emergency' -Facility 'daemon' -Verbose 4>&1)[1] | Should be 'Priority is 24'
         }
 
         It 'verbosely should print the correct priority of 31 if Facility is daemon and Severity is Debug' {
-            (Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'debug' -Facility 'daemon' -Verbose 4>&1)[1] | Should Match 'Priority is 31'
+            (Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'debug' -Facility 'daemon' -Verbose 4>&1)[1] | Should be 'Priority is 31'
         }
     }
 
     Context 'Verbose Information - RFC 3164' {
-        It 'Should send RFC 3164 formatted message (checked via verbose output)' {
-            Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Verbose | Should be $null
+        $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -RFC3164 -Verbose 4>&1
+        $Expected = 'Message to send will be <33>Jan 01 00:00:00 TestHostname PowerShellSyslog.Tests.ps1 Test Syslog Message'
+
+        It 'Should contain RFC3164 formatted message' {
+            $TestCase[3] | Should Be $Expected
         }
     }
 
     Context 'Verbose Information - RFC 5424' {
-    
+        $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Verbose 4>&1
+        $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
+        $Expected = 'Message to send will be <33>1 {0} TestHostname PowerShellSyslog.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+
+        It 'Should contain RFC5424 formatted message' {
+            $TestCase[3] | Should Be $Expected
+        }
     }
 
     Context 'Determine hostname correctly' {
     
     }
 }
+
+
+# Mock Get-NetIPAddress and Test-NetConnection
