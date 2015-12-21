@@ -40,6 +40,7 @@ Describe 'Send-SyslogMessage' {
         }
 
         <#
+
         .PARAMETER RFC3164
             Send an RFC3164 fomatted message instead of RFC5424.
 
