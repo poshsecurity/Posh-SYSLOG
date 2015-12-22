@@ -9,6 +9,14 @@ Describe 'Send-SyslogMessage' {
 
     $ENV:Computername = 'TestHostname'
     $ENV:userdnsdomain = $null
+    
+    $GetSyslogPacket = {
+        $endpoint = New-Object System.Net.IPEndPoint ([IPAddress]::Any,514)
+        $udpclient= New-Object System.Net.Sockets.UdpClient 514
+        $content=$udpclient.Receive([ref]$endpoint)
+        [Text.Encoding]::ASCII.GetString($content)
+    } 
+
 
     Context 'Parameter Validation' {
         It 'Should not accept a null value for the server' {
@@ -70,13 +78,7 @@ Describe 'Send-SyslogMessage' {
         #>
     }
 
-    Context 'Output' {
-        It 'Should not return any value' {
-            Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' | Should be $null
-        }
-    }
-
-    Context 'Verbose Information - Not RFC Specific' {
+    Context 'Severity Level Calculations' {
         It 'verbosely should print the correct priority of 0 if Facility is Kern and Severity is Emergency' {
             (Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Emergency' -Facility 'kern' -Verbose 4>&1)[1] | Should be 'Priority is 0'
         }
@@ -94,29 +96,51 @@ Describe 'Send-SyslogMessage' {
         }
     }
 
-    Context 'Verbose Information - RFC 3164' {
-        $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -RFC3164 -Verbose 4>&1
-        $Expected = 'Message to send will be <33>Jan 01 00:00:00 TestHostname PowerShellSyslog.Tests.ps1 Test Syslog Message'
-
-        It 'Should contain RFC3164 formatted message' {
-            $TestCase[3] | Should Be $Expected
-        }
-    }
-
-    Context 'Verbose Information - RFC 5424' {
-        $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Verbose 4>&1
-        $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
-        $Expected = 'Message to send will be <33>1 {0} TestHostname PowerShellSyslog.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
-
-        It 'Should contain RFC5424 formatted message' {
-            $TestCase[3] | Should Be $Expected
-        }
-    }
-
-    Context 'Determine hostname correctly' {
+    Context 'Hostname determination' {
     
     }
+
+    Context 'RFC 3164 Message Format' {      
+        start-job -Name SyslogTest1 -ScriptBlock $GetSyslogPacket
+        Start-Sleep 2
+        $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -RFC3164
+        Start-Sleep 2
+        $UDPResult = Receive-Job SyslogTest1
+        Remove-Job SyslogTest1
+
+        $Expected = '<33>Jan 01 00:00:00 TestHostname PowerShellSyslog.Tests.ps1 Test Syslog Message'
+
+        It 'Should send RFC5424 formatted message' {
+            $UDPResult | Should Be $Expected
+        }
+
+        It 'Should not return any value' {
+            $TestCase | Should be $null
+        }
+    }
+
+    Context 'RFC 5424 message format' {
+        start-job -Name SyslogTest1 -ScriptBlock $GetSyslogPacket
+        Start-Sleep 2
+        $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'
+        Start-Sleep 2
+        $UDPResult = Receive-Job SyslogTest1
+        Remove-Job SyslogTest1
+
+        $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
+        $Expected = '<33>1 {0} TestHostname PowerShellSyslog.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+
+        It 'Should send RFC5424 formatted message' {
+            $UDPResult | Should Be $Expected
+        }
+
+        It 'Should not return any value' {
+            $TestCase | Should be $null
+        }
+    }
+
 }
 
 
-# Mock Get-NetIPAddress and Test-NetConnection
+# Mock Get-NetIPAddress and Test-NetConnection to test the hostname selection, and also to enforce what we are expecting
+
