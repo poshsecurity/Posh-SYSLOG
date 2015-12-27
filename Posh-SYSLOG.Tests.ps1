@@ -1,12 +1,12 @@
-﻿Import-Module $PSScriptRoot\PowerShellSyslog.psd1 -Force
+﻿Import-Module $PSScriptRoot\Posh-SYSLOG.psm1 -Force
 Remove-Job -Name SyslogTest1 -Force -ErrorAction SilentlyContinue
 
 Describe 'Send-SyslogMessage' {
-    Mock -ModuleName PowerShellSyslog Get-Date { return (New-Object datetime(2000,1,1)) }
+    Mock -ModuleName Posh-SYSLOG Get-Date { return (New-Object datetime(2000,1,1)) }
 
-    Mock -ModuleName PowerShellSyslog Get-NetIPAddress {return $null}
+    Mock -ModuleName Posh-SYSLOG Get-NetIPAddress {return $null}
 
-    Mock -ModuleName PowerShellSyslog Test-NetConnection {
+    Mock -ModuleName Posh-SYSLOG Test-NetConnection {
         $Connection = New-Object PSCustomObject
         $Connection | Add-Member -MemberType NoteProperty -Name 'SourceAddress' -Value (New-Object PSCustomObject) -Force
         $Connection.SourceAddress | Add-Member -MemberType NoteProperty -Name 'IPAddress' -Value ('123.123.123.123') -Force
@@ -83,7 +83,7 @@ Describe 'Send-SyslogMessage' {
             $UDPResult = Receive-Job SyslogTest1
             Remove-Job SyslogTest1
             $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
-            $Expected = '<0>1 {0} TestHostname PowerShellSyslog.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $Expected = '<0>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
             
         }
 
@@ -95,7 +95,7 @@ Describe 'Send-SyslogMessage' {
             $UDPResult = Receive-Job SyslogTest1
             Remove-Job SyslogTest1
             $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
-            $Expected = '<7>1 {0} TestHostname PowerShellSyslog.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $Expected = '<7>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
             $UDPResult | Should Be $Expected
         }   
 
@@ -107,7 +107,7 @@ Describe 'Send-SyslogMessage' {
             $UDPResult = Receive-Job SyslogTest1
             Remove-Job SyslogTest1
             $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
-            $Expected = '<24>1 {0} TestHostname PowerShellSyslog.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $Expected = '<24>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
             $UDPResult | Should Be $Expected
         }
 
@@ -119,7 +119,7 @@ Describe 'Send-SyslogMessage' {
             $UDPResult = Receive-Job SyslogTest1
             Remove-Job SyslogTest1
             $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
-            $Expected = '<31>1 {0} TestHostname PowerShellSyslog.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $Expected = '<31>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
             $UDPResult | Should Be $Expected
         }
     }
@@ -131,7 +131,7 @@ Describe 'Send-SyslogMessage' {
         Start-Sleep 2
         $UDPResult = Receive-Job SyslogTest1
         Remove-Job SyslogTest1
-        $Expected = '<33>Jan 01 00:00:00 TestHostname PowerShellSyslog.Tests.ps1 Test Syslog Message'
+        $Expected = '<33>Jan 01 00:00:00 TestHostname Posh-SYSLOG.Tests.ps1 Test Syslog Message'
 
         It 'Should send RFC5424 formatted message' {
             $UDPResult | Should Be $Expected
@@ -150,7 +150,7 @@ Describe 'Send-SyslogMessage' {
         $UDPResult = Receive-Job SyslogTest1
         Remove-Job SyslogTest1
         $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
-        $Expected = '<33>1 {0} TestHostname PowerShellSyslog.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+        $Expected = '<33>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
 
         It 'Should send RFC5424 formatted message' {
             $UDPResult | Should Be $Expected
@@ -170,7 +170,7 @@ Describe 'Send-SyslogMessage' {
             $UDPResult = Receive-Job SyslogTest1
             Remove-Job SyslogTest1
             $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
-            $Expected = '<33>1 {0} SomeRandomHostNameDude PowerShellSyslog.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $Expected = '<33>1 {0} SomeRandomHostNameDude Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
             $UDPResult | Should Be $Expected
         }
 
@@ -183,13 +183,13 @@ Describe 'Send-SyslogMessage' {
             $UDPResult = Receive-Job SyslogTest1
             Remove-Job SyslogTest1
             $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
-            $Expected = '<33>1 {0} TestHostname.contoso.com PowerShellSyslog.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $Expected = '<33>1 {0} TestHostname.contoso.com Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
             $ENV:userdnsdomain = ''
             $UDPResult | Should Be $Expected
         }
 
         It 'Uses a Static IP address, on the correct interface that the server is reached on, if no FQDN and not hostname specified' {
-            Mock -ModuleName PowerShellSyslog Get-NetIPAddress {return 'value'}          
+            Mock -ModuleName Posh-SYSLOG Get-NetIPAddress {return 'value'}          
 
             start-job -Name SyslogTest1 -ScriptBlock $GetSyslogPacket
             Start-Sleep 2
@@ -198,13 +198,13 @@ Describe 'Send-SyslogMessage' {
             $UDPResult = Receive-Job SyslogTest1
             Remove-Job SyslogTest1
             $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
-            $Expected = '<33>1 {0} 123.123.123.123 PowerShellSyslog.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $Expected = '<33>1 {0} 123.123.123.123 Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
       
             $UDPResult | Should Be $Expected
         }
 
         It 'Uses the Windows computer name, if no static ip or FQDN' {
-            Mock -ModuleName PowerShellSyslog Get-NetIPAddress {return $null} 
+            Mock -ModuleName Posh-SYSLOG Get-NetIPAddress {return $null} 
 
             start-job -Name SyslogTest1 -ScriptBlock $GetSyslogPacket
             Start-Sleep 2
@@ -213,10 +213,15 @@ Describe 'Send-SyslogMessage' {
             $UDPResult = Receive-Job SyslogTest1
             Remove-Job SyslogTest1
             $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
-            $Expected = '<33>1 {0} TestHostname PowerShellSyslog.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $Expected = '<33>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
 
             $UDPResult | Should Be $Expected
         }
     }
 
+    Context 'Scrypt Analyzer' {
+        It 'Does not have any issues with the Script Analyser' {
+            Invoke-ScriptAnalyzer .\Functions\Send-SyslogMessage.ps1 | Should be $null
+        }
+    }
 }
