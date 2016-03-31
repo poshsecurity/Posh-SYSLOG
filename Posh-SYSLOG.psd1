@@ -12,7 +12,7 @@
 # RootModule = ''
 
 # Version number of this module.
-ModuleVersion = '2.0.2'
+ModuleVersion = '2.0.3'
 
 # ID used to uniquely identify this module
 GUID = '6c03881f-48f0-4a55-914d-a6ee33d019e7'
@@ -66,16 +66,16 @@ Description = 'Send SYSLOG messages from PowerShell'
 NestedModules = @('.\Posh-SYSLOG.psm1')
 
 # Functions to export from this module
-FunctionsToExport = ''
+FunctionsToExport = 'Send-SyslogMessage'
 
 # Cmdlets to export from this module
-CmdletsToExport = 'Send-SyslogMessage'
+CmdletsToExport = ''
 
 # Variables to export from this module
-VariablesToExport = '*'
+VariablesToExport = ''
 
 # Aliases to export from this module
-AliasesToExport = '*'
+AliasesToExport = ''
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()
@@ -104,7 +104,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'Resolving RFC3164 timestamp issue affecting LogStash see https://github.com/poshsecurity/Posh-SYSLOG/pull/2, updating copyright and exported CMDLets.'
+        ReleaseNotes = 'Fix PSD1 loading issue'
 
     } # End of PSData hashtable
 
