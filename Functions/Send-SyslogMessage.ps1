@@ -1,47 +1,43 @@
 ﻿#requires -Version 2 -Modules NetTCPIP
-Add-Type -TypeDefinition @"
-	public enum Syslog_Facility
-	{
-		kern,
-		user,
-		mail,
-		daemon,
-		auth,
-		syslog,
-		lpr,
-		news,
-		uucp,
-		clock,
-		authpriv,
-		ftp,
-		ntp,
-		logaudit,
-		logalert,
-		cron, 
-		local0,
-		local1,
-		local2,
-		local3,
-		local4,
-		local5,
-		local6,
-		local7,
-	}
-"@
+enum Syslog_Facility
+{
+	kern
+	user
+	mail
+	daemon
+	auth
+	syslog
+	lpr
+	news
+	uucp
+	clock
+	authpriv
+	ftp
+	ntp
+	logaudit
+	logalert
+	cron
+	local0
+	local1
+	local2
+	local3
+	local4
+	local5
+	local6
+	local7
+}
 
-Add-Type -TypeDefinition @"
-	public enum Syslog_Severity
-	{
-		Emergency,
-		Alert,
-		Critical,
-		Error,
-		Warning,
-		Notice,
-		Informational,
-		Debug
-	}
-"@
+enum Syslog_Severity
+{
+	Emergency
+	Alert
+	Critical
+	Error
+	Warning
+	Notice
+	Informational
+	Debug
+}
 
 function Send-SyslogMessage
 {
@@ -51,42 +47,6 @@ function Send-SyslogMessage
 
             .DESCRIPTION
             Sends a message to a SYSLOG server as defined in RFC 5424 and RFC 3164. 
-
-            .PARAMETER Server
-            Destination SYSLOG server that message is to be sent to.
-
-            .PARAMETER Message
-            Our message or content that we want to send to the server. This is option in RFC 5424, the CMDLet still has this as a madatory parameter, to send no message, simply specifiy '-' (as per RFC).
-
-            .PARAMETER Severity
-            Severity level as defined in SYSLOG specification, must be of ENUM type Syslog_Severity
-
-            .PARAMETER Facility
-            Facility of message as defined in SYSLOG specification, must be of ENUM type Syslog_Facility
-
-            .PARAMETER Hostname
-            Hostname of machine the mssage is about, if not specified, RFC 5425 selection rules will be followed.
-
-            .PARAMETER ApplicationName
-            Specify the name of the application or script that is sending the mesage. If not specified, will select the ScriptName, or if empty, powershell.exe will be sent. To send Null, specify '-' to meet RFC 5424. 
-
-            .PARAMETER ProcessID
-            ProcessID or PID of generator of message. Will automatically use $PID global variable. If you want to override this and send null, specify '-' to meet RFC 5424 rquirements. This is only sent for RFC 5424 messages.
-
-            .PARAMETER MessageID
-            Error message or troubleshooting number associated with the message being sent. If you want to override this and send null, specify '-' to meet RFC 5424 rquirements. This is only sent for RFC 5424 messages.
-
-            .PARAMETER StructuredData
-            Key Pairs of structured data as a string as defined in RFC5424. Default will be '-' which means null. This is only sent for RFC 5424 messages.
-
-            .PARAMETER Timestamp
-            Time and date of the message, must be of type DateTime. Correct format will be selected depending on RFC requested. If not specified, will call get-date to get appropriate date time.
-
-            .PARAMETER UDPPort
-            SYSLOG UDP port to send message to. Defaults to 514 if not specified.
-
-            .PARAMETER RFC3164
-            Send an RFC3164 fomatted message instead of RFC5424.
 
             .INPUTS
             Nothing can be piped directly into this function
@@ -101,76 +61,94 @@ function Send-SyslogMessage
             .NOTES
             NAME: Send-SyslogMessage
             AUTHOR: Kieran Jacobsen
-            LASTEDIT: 2015 01 12
-            KEYWORDS: syslog, messaging, notifications
 
             .LINK
-            https://github.com/kjacobsen/PowershellSyslog
+            https://github.com/poshsecurity/Posh-Syslog
 
             .LINK
-            http://poshsecurity.com
+            https://poshsecurity.com
 
     #>
     [CMDLetBinding(DefaultParameterSetName = 'RFC5424')]
     Param
     (
-        [Parameter(mandatory = $true)]
+        #Destination SYSLOG server that message is to be sent to.
+        [Parameter(mandatory   = $true,
+                   HelpMessage = 'Server to send message to')]
         [ValidateNotNullOrEmpty()]
         [String] 
         $Server,
 	
-        [Parameter(mandatory = $true)]
+        #Our message or content that we want to send to the server. This is option in RFC 5424, the CMDLet still has this as a madatory parameter, to send no message, simply specifiy '-' (as per RFC).
+        [Parameter(mandatory   = $true,
+                   HelpMessage = 'Message to send')]
         [ValidateNotNullOrEmpty()]
         [String]
         $Message,
 	
-        [Parameter(mandatory = $true)]
+        #Severity level as defined in SYSLOG specification, must be of ENUM type Syslog_Severity
+        [Parameter(mandatory   = $true,
+                   HelpMessage = 'Messsage severity level')]
         [ValidateNotNullOrEmpty()]
         [Syslog_Severity]
         $Severity,
 	
-        [Parameter(mandatory = $true)]
+        #Facility of message as defined in SYSLOG specification, must be of ENUM type Syslog_Facility
+        [Parameter(mandatory   = $true,
+                   HelpMessage = 'Facility sending message')]
         [ValidateNotNullOrEmpty()]
         [Syslog_Facility] 
         $Facility,
 	
+        #Hostname of machine the mssage is about, if not specified, RFC 5425 selection rules will be followed.
         [Parameter(mandatory = $false)]
         [ValidateNotNullOrEmpty()]
         [String]
         $Hostname = '',
 	
+        #Specify the name of the application or script that is sending the mesage. If not specified, will select the ScriptName, or if empty, powershell.exe will be sent. To send Null, specify '-' to meet RFC 5424. 
         [Parameter(mandatory = $false)]
         [ValidateNotNullOrEmpty()]
         [String]
         $ApplicationName = '',
 	
-        [Parameter(mandatory = $false, ParameterSetName = 'RFC5424')]
+        #ProcessID or PID of generator of message. Will automatically use $PID global variable. If you want to override this and send null, specify '-' to meet RFC 5424 rquirements. This is only sent for RFC 5424 messages.
+        [Parameter(mandatory = $false, 
+                   ParameterSetName = 'RFC5424')]
         [ValidateNotNullOrEmpty()]
         [String]
         $ProcessID = $PID,
 	
-        [Parameter(mandatory = $false, ParameterSetName = 'RFC5424')]
+        #Error message or troubleshooting number associated with the message being sent. If you want to override this and send null, specify '-' to meet RFC 5424 rquirements. This is only sent for RFC 5424 messages.
+        [Parameter(mandatory = $false, 
+                   ParameterSetName = 'RFC5424')]
         [ValidateNotNullOrEmpty()]
         [String]
         $MessageID = '-',
 	
-        [Parameter(mandatory = $false, ParameterSetName = 'RFC5424')]
+        #Key Pairs of structured data as a string as defined in RFC5424. Default will be '-' which means null. This is only sent for RFC 5424 messages.
+        [Parameter(mandatory = $false, 
+                   ParameterSetName = 'RFC5424')]
         [ValidateNotNullOrEmpty()]
         [String]
         $StructuredData = '-',
 	
+        #Time and date of the message, must be of type DateTime. Correct format will be selected depending on RFC requested. If not specified, will call get-date to get appropriate date time.
         [Parameter(mandatory = $false)]
         [ValidateNotNullOrEmpty()]
         [DateTime] 
         $Timestamp = (Get-Date),
 	
+        #SYSLOG UDP port to send message to. Defaults to 514 if not specified.
         [Parameter(mandatory = $false)]
         [ValidateNotNullOrEmpty()]
         [ValidateRange(1,65535)]
         [UInt16]
         $UDPPort = 514,
 	
-        [Parameter(mandatory = $True, ParameterSetName = 'RFC3164')]
+        #Send an RFC3164 fomatted message instead of RFC5424.
+        [Parameter(mandatory = $True,
+                   ParameterSetName = 'RFC3164')]
         [switch]
         $RFC3164
     )
