@@ -12,7 +12,7 @@
 # RootModule = ''
 
 # Version number of this module.
-ModuleVersion = '2.0.3'
+ModuleVersion = '2.0.4'
 
 # ID used to uniquely identify this module
 GUID = '6c03881f-48f0-4a55-914d-a6ee33d019e7'
@@ -104,7 +104,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'Fix PSD1 loading issue'
+        ReleaseNotes = 'Resolve issues with long messages as raised by xtrahost on GitHub'
 
     } # End of PSData hashtable
 
