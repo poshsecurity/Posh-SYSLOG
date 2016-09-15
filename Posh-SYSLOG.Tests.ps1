@@ -1,4 +1,5 @@
 ﻿Import-Module $PSScriptRoot\Posh-SYSLOG.psm1 -Force
+Stop-Job -Name SyslogTest1 -ErrorAction SilentlyContinue
 Remove-Job -Name SyslogTest1 -Force -ErrorAction SilentlyContinue
 
 Describe 'Send-SyslogMessage' {
@@ -81,6 +82,7 @@ Describe 'Send-SyslogMessage' {
             $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Emergency' -Facility 'kern'
             Start-Sleep 2
             $UDPResult = Receive-Job SyslogTest1
+            Stop-Job -Name SyslogTest1 -ErrorAction SilentlyContinue
             Remove-Job SyslogTest1
             $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
             $Expected = '<0>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
@@ -93,6 +95,7 @@ Describe 'Send-SyslogMessage' {
             $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Debug' -Facility 'kern'
             Start-Sleep 2
             $UDPResult = Receive-Job SyslogTest1
+            Stop-Job -Name SyslogTest1 -ErrorAction SilentlyContinue
             Remove-Job SyslogTest1
             $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
             $Expected = '<7>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
@@ -105,6 +108,7 @@ Describe 'Send-SyslogMessage' {
             $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Emergency' -Facility 'daemon'
             Start-Sleep 2
             $UDPResult = Receive-Job SyslogTest1
+            Stop-Job -Name SyslogTest1 -ErrorAction SilentlyContinue
             Remove-Job SyslogTest1
             $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
             $Expected = '<24>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
@@ -117,6 +121,7 @@ Describe 'Send-SyslogMessage' {
             $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Debug' -Facility 'daemon'
             Start-Sleep 2
             $UDPResult = Receive-Job SyslogTest1
+            Stop-Job -Name SyslogTest1 -ErrorAction SilentlyContinue
             Remove-Job SyslogTest1
             $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
             $Expected = '<31>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
@@ -130,6 +135,7 @@ Describe 'Send-SyslogMessage' {
         $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -RFC3164
         Start-Sleep 2
         $UDPResult = Receive-Job SyslogTest1
+        Stop-Job -Name SyslogTest1 -ErrorAction SilentlyContinue
         Remove-Job SyslogTest1
         $Expected = '<33>Jan 01 00:00:00 TestHostname Posh-SYSLOG.Tests.ps1 Test Syslog Message'
 
@@ -148,6 +154,7 @@ Describe 'Send-SyslogMessage' {
         $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'
         Start-Sleep 2
         $UDPResult = Receive-Job SyslogTest1
+        Stop-Job -Name SyslogTest1 -ErrorAction SilentlyContinue
         Remove-Job SyslogTest1
         $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
         $Expected = '<33>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
@@ -168,6 +175,7 @@ Describe 'Send-SyslogMessage' {
             $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname 'SomeRandomHostNameDude'
             Start-Sleep 2
             $UDPResult = Receive-Job SyslogTest1
+            Stop-Job -Name SyslogTest1 -ErrorAction SilentlyContinue
             Remove-Job SyslogTest1
             $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
             $Expected = '<33>1 {0} SomeRandomHostNameDude Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
@@ -181,6 +189,7 @@ Describe 'Send-SyslogMessage' {
             $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'
             Start-Sleep 2
             $UDPResult = Receive-Job SyslogTest1
+            Stop-Job -Name SyslogTest1 -ErrorAction SilentlyContinue
             Remove-Job SyslogTest1
             $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
             $Expected = '<33>1 {0} TestHostname.contoso.com Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
@@ -196,6 +205,7 @@ Describe 'Send-SyslogMessage' {
             $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'
             Start-Sleep 2
             $UDPResult = Receive-Job SyslogTest1
+            Stop-Job -Name SyslogTest1 -ErrorAction SilentlyContinue
             Remove-Job SyslogTest1
             $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
             $Expected = '<33>1 {0} 123.123.123.123 Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
@@ -211,6 +221,7 @@ Describe 'Send-SyslogMessage' {
             $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'
             Start-Sleep 2
             $UDPResult = Receive-Job SyslogTest1
+            Stop-Job -Name SyslogTest1 -ErrorAction SilentlyContinue
             Remove-Job SyslogTest1
             $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
             $Expected = '<33>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
