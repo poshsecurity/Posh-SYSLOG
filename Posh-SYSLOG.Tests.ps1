@@ -18,12 +18,28 @@ Describe 'Send-SyslogMessage' {
     $ENV:Computername = 'TestHostname'
     $ENV:userdnsdomain = $null
     
-    $GetSyslogPacket = {
-        $endpoint = New-Object System.Net.IPEndPoint ([IPAddress]::Any,514)
-        $udpclient= New-Object System.Net.Sockets.UdpClient 514
-        $content=$udpclient.Receive([ref]$endpoint)
-        [Text.Encoding]::ASCII.GetString($content)
-    } 
+    $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
+    function Test-Message ($SendSyslogMessage)
+    {
+        $GetSyslogPacket = {
+            $endpoint = New-Object System.Net.IPEndPoint ([IPAddress]::Any,514)
+            $udpclient= New-Object System.Net.Sockets.UdpClient 514
+            $content=$udpclient.Receive([ref]$endpoint)
+            [Text.Encoding]::ASCII.GetString($content)
+        }
+
+        $null = start-job -Name SyslogTest1 -ScriptBlock $GetSyslogPacket
+        Start-Sleep 2
+        Invoke-Expression $SendSyslogMessage
+        do
+        {
+            Start-Sleep 2
+        }          
+        until ((Get-Job -Name SyslogTest1 | Select-Object -ExpandProperty State) -eq 'Completed')
+        $UDPResult = Receive-Job SyslogTest1
+        Remove-Job SyslogTest1
+        return $UDPResult
+    }
 
     Context 'Parameter Validation' {
         It 'Should not accept a null value for the server' {
@@ -77,152 +93,91 @@ Describe 'Send-SyslogMessage' {
 
     Context 'Severity Level Calculations' {
         It 'Calculates the correct priority of 0 if Facility is Kern and Severity is Emergency' {
-            start-job -Name SyslogTest1 -ScriptBlock $GetSyslogPacket
-            Start-Sleep 2
-            $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Emergency' -Facility 'kern'
-            Start-Sleep 2
-            $UDPResult = Receive-Job SyslogTest1
-            Remove-Job SyslogTest1
-            $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
-            $Expected = '<0>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
-            
+            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Emergency' -Facility 'kern'"
+            $ExpectedResult = '<0>1 {0} TestHostname PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $TestResult = Test-Message $TestCase
+            $TestResult | Should Be $ExpectedResult
         }
 
         It 'Calculates the correct priority of 7 if Facility is Kern and Severity is Debug' {
-            start-job -Name SyslogTest1 -ScriptBlock $GetSyslogPacket
-            Start-Sleep 2
-            $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Debug' -Facility 'kern'
-            Start-Sleep 2
-            $UDPResult = Receive-Job SyslogTest1
-            Remove-Job SyslogTest1
-            $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
-            $Expected = '<7>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
-            $UDPResult | Should Be $Expected
+            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Debug' -Facility 'kern'"
+            $ExpectedResult = '<7>1 {0} TestHostname PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $TestResult = Test-Message $TestCase
+            $TestResult | Should Be $ExpectedResult
         }   
 
         It 'Calculates the correct priority of 24 if Facility is daemon and Severity is Emergency' {
-            start-job -Name SyslogTest1 -ScriptBlock $GetSyslogPacket
-            Start-Sleep 2
-            $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Emergency' -Facility 'daemon'
-            Start-Sleep 2
-            $UDPResult = Receive-Job SyslogTest1
-            Remove-Job SyslogTest1
-            $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
-            $Expected = '<24>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
-            $UDPResult | Should Be $Expected
+            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Emergency' -Facility 'daemon'"
+            $ExpectedResult = '<24>1 {0} TestHostname PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $TestResult = Test-Message $TestCase
+            $TestResult | Should Be $ExpectedResult
         }
 
         It 'Calculates the correct priority of 31 if Facility is daemon and Severity is Debug' {
-            start-job -Name SyslogTest1 -ScriptBlock $GetSyslogPacket
-            Start-Sleep 2
-            $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Debug' -Facility 'daemon'
-            Start-Sleep 2
-            $UDPResult = Receive-Job SyslogTest1
-            Remove-Job SyslogTest1
-            $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
-            $Expected = '<31>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
-            $UDPResult | Should Be $Expected
+            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Debug' -Facility 'daemon'"
+            $ExpectedResult = '<31>1 {0} TestHostname PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $TestResult = Test-Message $TestCase
+            $TestResult | Should Be $ExpectedResult
         }
     }
 
-    Context 'RFC 3164 Message Format' {      
-        start-job -Name SyslogTest1 -ScriptBlock $GetSyslogPacket
-        Start-Sleep 2
-        $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -RFC3164
-        Start-Sleep 2
-        $UDPResult = Receive-Job SyslogTest1
-        Remove-Job SyslogTest1
-        $Expected = '<33>Jan 01 00:00:00 TestHostname Posh-SYSLOG.Tests.ps1 Test Syslog Message'
-
+    Context 'RFC 3164 Message Format' {
         It 'Should send RFC5424 formatted message' {
-            $UDPResult | Should Be $Expected
-        }
-
-        It 'Should not return any value' {
-            $TestCase | Should be $null
+            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -RFC3164"
+            $ExpectedResult = '<33>Jan 01 00:00:00 TestHostname PowerShell Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $TestResult = Test-Message $TestCase
+            $TestResult | Should Be $ExpectedResult
         }
     }
 
     Context 'RFC 5424 message format' {
-        start-job -Name SyslogTest1 -ScriptBlock $GetSyslogPacket
-        Start-Sleep 2
-        $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'
-        Start-Sleep 2
-        $UDPResult = Receive-Job SyslogTest1
-        Remove-Job SyslogTest1
-        $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
-        $Expected = '<33>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
-
         It 'Should send RFC5424 formatted message' {
-            $UDPResult | Should Be $Expected
-        }
-
-        It 'Should not return any value' {
-            $TestCase | Should be $null
+            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'"
+            $ExpectedResult = '<33>1 {0} TestHostname PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $TestResult = Test-Message $TestCase
+            $TestResult | Should Be $ExpectedResult
         }
     }
 
     Context 'Hostname determination' {              
         It 'Uses any hostname it is given' {
-            Start-Job -Name SyslogTest1 -ScriptBlock $GetSyslogPacket
-            Start-Sleep 2
-            $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname 'SomeRandomHostNameDude'
-            Start-Sleep 2
-            $UDPResult = Receive-Job SyslogTest1
-            Remove-Job SyslogTest1
-            $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
-            $Expected = '<33>1 {0} SomeRandomHostNameDude Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
-            $UDPResult | Should Be $Expected
+            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname 'SomeRandomHostNameDude'"
+            $ExpectedResult = '<33>1 {0} SomeRandomHostNameDude PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $TestResult = Test-Message $TestCase
+            $TestResult | Should Be $ExpectedResult
         }
 
         It 'Uses the FQDN if the computer is domain joined' {
             $ENV:userdnsdomain = 'contoso.com'
-            start-job -Name SyslogTest1 -ScriptBlock $GetSyslogPacket
-            Start-Sleep 2
-            $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'
-            Start-Sleep 2
-            $UDPResult = Receive-Job SyslogTest1
-            Remove-Job SyslogTest1
-            $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
-            $Expected = '<33>1 {0} TestHostname.contoso.com Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'"
+            $ExpectedResult = '<33>1 {0} TestHostname.contoso.com PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $TestResult = Test-Message $TestCase
             $ENV:userdnsdomain = ''
-            $UDPResult | Should Be $Expected
+            $TestResult | Should Be $ExpectedResult
         }
 
         It 'Uses a Static IP address, on the correct interface that the server is reached on, if no FQDN and not hostname specified' {
             Mock -ModuleName Posh-SYSLOG Get-NetIPAddress {return 'value'}          
 
-            start-job -Name SyslogTest1 -ScriptBlock $GetSyslogPacket
-            Start-Sleep 2
-            $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'
-            Start-Sleep 2
-            $UDPResult = Receive-Job SyslogTest1
-            Remove-Job SyslogTest1
-            $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
-            $Expected = '<33>1 {0} 123.123.123.123 Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
-      
-            $UDPResult | Should Be $Expected
+            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'"
+            $ExpectedResult = '<33>1 {0} 123.123.123.123 PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $TestResult = Test-Message $TestCase
+            $TestResult | Should Be $ExpectedResult
         }
 
         It 'Uses the Windows computer name, if no static ip or FQDN' {
             Mock -ModuleName Posh-SYSLOG Get-NetIPAddress {return $null} 
 
-            start-job -Name SyslogTest1 -ScriptBlock $GetSyslogPacket
-            Start-Sleep 2
-            $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'
-            Start-Sleep 2
-            $UDPResult = Receive-Job SyslogTest1
-            Remove-Job SyslogTest1
-            $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
-            $Expected = '<33>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
-
-            $UDPResult | Should Be $Expected
+            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'"
+            $ExpectedResult = '<33>1 {0} TestHostname PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $TestResult = Test-Message $TestCase
+            $TestResult | Should Be $ExpectedResult
         }
     }
 
     Context 'Scrypt Analyzer' {
         It 'Does not have any issues with the Script Analyser' {
-            Invoke-ScriptAnalyzer .\Functions\Send-SyslogMessage.ps1 | Should be $true
+            Invoke-ScriptAnalyzer .\Functions\Send-SyslogMessage.ps1 | Should be $null
         }
     }
 }
