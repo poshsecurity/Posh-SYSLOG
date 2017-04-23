@@ -33,13 +33,48 @@ Describe 'Send-SyslogMessage' {
         Invoke-Expression $SendSyslogMessage
         do
         {
-            Start-Sleep 1
+            Start-Sleep 2
         }          
         until ((Get-Job -Name SyslogTest1 | Select-Object -ExpandProperty State) -eq 'Completed')
         $UDPResult = Receive-Job SyslogTest1
         Remove-Job SyslogTest1
         return $UDPResult
     }
+
+
+    function Test-TcpMessage ($SendSyslogMessage)
+    {
+        $GetSyslogTcpMsg = {
+            $endpoint = New-Object System.Net.IPEndPoint ([IPAddress]::Any,514)
+            $tcplistener= New-Object System.Net.Sockets.TcpListener $endpoint
+            $tcplistener.start()
+
+            $client = $tcplistener.AcceptTcpClient() # will block here until connection
+            $stream = $client.GetStream();
+            
+            $reader = New-Object System.IO.StreamReader $stream   
+            $content = $reader.ReadToEnd()
+            $content
+               
+            $reader.Dispose()
+            $stream.Dispose()
+            $client.Dispose()
+            $tcplistener.stop()
+        }
+
+        $null = start-job -Name SyslogTest2 -ScriptBlock $GetSyslogTcpMsg
+        Start-Sleep 2
+        Invoke-Expression $SendSyslogMessage
+        do
+        {
+            Start-Sleep 2
+        }          
+        until ((Get-Job -Name SyslogTest2 | Select-Object -ExpandProperty State) -eq 'Completed')
+        $TcpResult = Receive-Job SyslogTest2
+        Remove-Job SyslogTest2
+        return $TcpResult
+    }
+
 
     Context 'Parameter Validation' {
         It 'Should not accept a null value for the server' {
@@ -93,28 +128,28 @@ Describe 'Send-SyslogMessage' {
 
     Context 'Severity Level Calculations' {
         It 'Calculates the correct priority of 0 if Facility is Kern and Severity is Emergency' {
-            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Emergency' -Facility 'kern'"
+            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Emergency' -Facility 'kern' -Hostname TestHostname"
             $ExpectedResult = '<0>1 {0} TestHostname PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
             $TestResult = Test-Message $TestCase
             $TestResult | Should Be $ExpectedResult
         }
 
         It 'Calculates the correct priority of 7 if Facility is Kern and Severity is Debug' {
-            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Debug' -Facility 'kern'"
+            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Debug' -Facility 'kern' -Hostname TestHostname"
             $ExpectedResult = '<7>1 {0} TestHostname PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
             $TestResult = Test-Message $TestCase
             $TestResult | Should Be $ExpectedResult
         }   
 
         It 'Calculates the correct priority of 24 if Facility is daemon and Severity is Emergency' {
-            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Emergency' -Facility 'daemon'"
+            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Emergency' -Facility 'daemon' -Hostname TestHostname"
             $ExpectedResult = '<24>1 {0} TestHostname PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
             $TestResult = Test-Message $TestCase
             $TestResult | Should Be $ExpectedResult
         }
 
         It 'Calculates the correct priority of 31 if Facility is daemon and Severity is Debug' {
-            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Debug' -Facility 'daemon'"
+            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Debug' -Facility 'daemon' -Hostname TestHostname"
             $ExpectedResult = '<31>1 {0} TestHostname PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
             $TestResult = Test-Message $TestCase
             $TestResult | Should Be $ExpectedResult
@@ -123,8 +158,8 @@ Describe 'Send-SyslogMessage' {
 
     Context 'RFC 3164 Message Format' {
         It 'Should send RFC5424 formatted message' {
-            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -RFC3164"
-            $ExpectedResult = '<33>Jan 01 00:00:00 TestHostname PowerShell Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -RFC3164 -Hostname TestHostname"
+            $ExpectedResult = '<33>Jan 01 00:00:00 TestHostname PowerShell Test Syslog Message'
             $TestResult = Test-Message $TestCase
             $TestResult | Should Be $ExpectedResult
         }
@@ -132,7 +167,7 @@ Describe 'Send-SyslogMessage' {
 
     Context 'RFC 5424 message format' {
         It 'Should send RFC5424 formatted message' {
-            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'"
+            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname TestHostname"
             $ExpectedResult = '<33>1 {0} TestHostname PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
             $TestResult = Test-Message $TestCase
             $TestResult | Should Be $ExpectedResult
@@ -141,18 +176,20 @@ Describe 'Send-SyslogMessage' {
 
     Context 'Hostname determination' {              
         It 'Uses any hostname it is given' {
-            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname 'SomeRandomHostNameDude'"
-            $ExpectedResult = '<33>1 {0} SomeRandomHostNameDude PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname 'SomeRandomHostNameDude.example.invalid'"
+            $ExpectedResult = '<33>1 {0} SomeRandomHostNameDude.example.invalid PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
             $TestResult = Test-Message $TestCase
             $TestResult | Should Be $ExpectedResult
         }
 
+        <# #These tests will not work with the new FQDN and static IP detection:
+
         It 'Uses the FQDN if the computer is domain joined' {
-            $ENV:userdnsdomain = 'contoso.com'
+            #$ENV:userdnsdomain = 'contoso.com'
             $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'"
-            $ExpectedResult = '<33>1 {0} TestHostname.contoso.com PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $ExpectedResult = '<33>1 {0} {1} PowerShell {2} - - Test Syslog Message' -f $ExpectedTimeStamp, $FQDN, $PID
             $TestResult = Test-Message $TestCase
-            $ENV:userdnsdomain = ''
+            #$ENV:userdnsdomain = ''
             $TestResult | Should Be $ExpectedResult
         }
 
@@ -173,15 +210,56 @@ Describe 'Send-SyslogMessage' {
             $TestResult = Test-Message $TestCase
             $TestResult | Should Be $ExpectedResult
         }
+        #>
     }
 
     Context 'Log Message tests' {
-        It 'truncates long messages correctly' {
-            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'This is a very long syslog message. 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890' -Severity 'Alert' -Facility 'auth'"
-            $ExpectedResult = '<33>1 {0} TestHostname PowerShell {1} - - This is a very long syslog message. 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234' -f $ExpectedTimeStamp, $PID
+        $LongMsg = 'This is a very long syslog message. 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890'
+
+        It 'truncates RFC 5424 messages to 2k' {
+            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message '$LongMsg' -Severity 'Alert' -Facility 'auth' -Hostname TestHostname"
+            $ExpectedResult = ('<33>1 {0} TestHostname PowerShell {1} - - {2}' -f $ExpectedTimeStamp, $PID, $LongMsg).Substring(0,2048)
             $TestResult = Test-Message $TestCase
             $TestResult | Should Be $ExpectedResult
         }
+        It 'truncates RFC 3164 messages to 1k' {
+            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message '$LongMsg' -Severity 'Alert' -Facility 'auth' -RFC3164 -Hostname TestHostname"
+            $ExpectedResult = ('<33>Jan 01 00:00:00 TestHostname PowerShell {1}' -f $ExpectedTimeStamp, $LongMsg).Substring(0,1024)
+            $TestResult = Test-Message $TestCase
+            $TestResult | Should Be $ExpectedResult
+        }
+        It 'sends using TCP transport' {
+            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname TestHostname -Transport TCP -FramingMethod Non-Transparent-Framing"
+            $ExpectedResult = '<33>1 {0} TestHostname PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $TestResult = Test-TcpMessage $TestCase
+            $TestResult | Should Be $ExpectedResult
+        }
+    }
+
+
+
+
+    Context 'TCP Message tests' {
+        It 'sends using TCP transport with Octet-Counting as the framing' {
+            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname TestHostname -Transport TCP -FramingMethod Octet-Counting"
+            $ExpectedResult = '61 <33>1 {0} TestHostname PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $TestResult = Test-TcpMessage $TestCase
+            $TestResult | Should Be $ExpectedResult
+        }
+        It 'sends using TCP transport with Non-Transparent-Framing as the framing' {
+            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname TestHostname -Transport TCP -FramingMethod Non-Transparent-Framing"
+            $ExpectedResult = '<33>1 {0} TestHostname PowerShell {1} - - Test Syslog Message\n' -f $ExpectedTimeStamp, $PID
+            $TestResult = Test-TcpMessage $TestCase
+            $TestResult | Should Be $ExpectedResult
+        }
+
+        It 'sends using TCP transport with no framing' {
+            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname TestHostname -Transport TCP -FramingMethod None"
+            $ExpectedResult = '<33>1 {0} TestHostname PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $TestResult = Test-TcpMessage $TestCase
+            $TestResult | Should Be $ExpectedResult
+        }
+
     }
 
     Context 'Function tests' {
