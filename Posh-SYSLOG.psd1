@@ -12,7 +12,7 @@
 # RootModule = ''
 
 # Version number of this module.
-ModuleVersion = '2.0.4'
+ModuleVersion = '3.0.0'
 
 # ID used to uniquely identify this module
 GUID = '6c03881f-48f0-4a55-914d-a6ee33d019e7'
@@ -24,7 +24,7 @@ Author = 'Kieran Jacobsen'
 CompanyName = 'PoshSecurity.com'
 
 # Copyright statement for this module
-Copyright = '(c) 2016 Kieran Jacobsen. All rights reserved.'
+Copyright = '(c) 2017 Kieran Jacobsen. All rights reserved.'
 
 # Description of the functionality provided by this module
 Description = 'Send SYSLOG messages from PowerShell'
@@ -104,7 +104,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'Resolve issues with long messages as raised by xtrahost on GitHub'
+        ReleaseNotes = 'Introduces TCP support for sending messages. This work was provided by Jared (@PowershellShock).'
 
     } # End of PSData hashtable
 
