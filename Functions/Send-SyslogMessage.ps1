@@ -1,45 +1,472 @@
 ﻿#requires -Version 2 -Modules NetTCPIP
 enum Syslog_Facility
 {
-	kern
-	user
-	mail
-	daemon
-	auth
-	syslog
-	lpr
-	news
-	uucp
-	clock
-	authpriv
-	ftp
-	ntp
-	logaudit
-	logalert
-	cron
-	local0
-	local1
-	local2
-	local3
-	local4
-	local5
-	local6
-	local7
+    kern
+    user
+    mail
+    daemon
+    auth
+    syslog
+    lpr
+    news
+    uucp
+    clock
+    authpriv
+    ftp
+    ntp
+    logaudit
+    logalert
+    cron
+    local0
+    local1
+    local2
+    local3
+    local4
+    local5
+    local6
+    local7
 }
 
 enum Syslog_Severity
 {
-	Emergency
-	Alert
-	Critical
-	Error
-	Warning
-	Notice
-	Informational
-	Debug
+    Emergency
+    Alert
+    Critical
+    Error
+    Warning
+    Notice
+    Informational
+    Debug
 }
 
-function Send-SyslogMessage
+Function Get-SyslogHostname
+{
+    <#
+        .SYNOPSIS
+        Describe purpose of "Get-SyslogHostname" in 1-2 sentences.
+
+        .DESCRIPTION
+        Add a more complete description of what the function does.
+
+        .PARAMETER Socket
+        Describe parameter -Socket.
+
+        .EXAMPLE
+        Get-SyslogHostname -Socket Value
+        Describe what this call does
+
+        .NOTES
+        Place additional notes here.
+
+        .LINK
+        URLs to related sites
+        The first link is opened by Get-Help -Online Get-SyslogHostname
+
+        .INPUTS
+        List of input types that are accepted by this function.
+
+        .OUTPUTS
+        List of output types produced by this function.
+    #>
+
+    Param
+    (
+        # Socket of the Client
+        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
+        [Net.Sockets.Socket]
+        $Socket
+    )
+
+    <#
+            According to RFC 5424 (section 6.2.4), we need to send our HOSTNAME field as one of these 5 (in order of priority)
+            1.  FQDN
+            2.  Static IP address
+            3.  Hostname - Windows always has one of these, so this is our last resort
+            4.  Dynamic IP address - We will never get to this one
+            5.  the NILVALUE - or this one
+
+            Windows should always, in the worst case, have a result at 3, the hostname or computer name from which this command is run.
+    #>        
+    
+    # Get the Win32_ComputerSystem object
+    $Win32_ComputerSystem = Get-WmiObject -Class win32_computersystem
+
+    if ($Win32_ComputerSystem.partofdomain) # If domain joined
+    {
+        # Use HOSTNAME Option 1 (FQDN), per RFC 5424 (section 6.2.4)
+        $Hostname = '{0}.{1}' -f $Win32_ComputerSystem.DNSHostname, $Win32_ComputerSystem.Domain
+        
+        Write-Verbose -Message ('The machine is joined to an Active Directory domain, hostname value will be FQDN: {0}' -f $Hostname)
+    }
+    else
+    {
+        # Ask the appropriate client what the local endpoint address is
+        $LocalEndPoint = $Socket.LocalEndpoint.Address.IPAddressToString
+
+        # Get the adapter that the endpoint is assigned to
+        $NetworkAdapter = Get-NetIPAddress -IPAddress $LocalEndPoint
+
+        # Is that local endpoint a statically assigned ip address?
+        if ($NetworkAdapter.PrefixOrigin -eq 'Manual')
+        {
+            # Use HOSTNAME Option 2 (Static IP address), per RFC 5424 (section 6.2.4)
+            $Hostname = $LocalEndPoint
+
+            Write-Verbose -Message ('A statically assigned IP was detected as the source for the route to {0}, so the static IP ({1}) will be used as the HOSTNAME value.' -f $Socket.RemoteEndPoint.Address.IPAddressToString, $Hostname)
+        }
+        else
+        {
+            # Use HOSTNAME Option 3 (hostname), per RFC 5424 (section 6.2.4)
+            $Hostname = $Env:COMPUTERNAME
+
+            Write-Verbose -Message ('The hostname ({0}) will be used as the HOSTNAME value.' -f $Hostname)
+        }
+    }
+
+    Write-Debug -Message ('Get-SyslogHostname is returning value {0}' -f $Hostname)
+
+    $Hostname
+}
+
+Function Connect-UDPClient
+{
+    <#
+        .SYNOPSIS
+        Describe purpose of "Connect-UDPClient" in 1-2 sentences.
+
+        .DESCRIPTION
+        Add a more complete description of what the function does.
+
+        .PARAMETER Server
+        Describe parameter -Server.
+
+        .PARAMETER Port
+        Describe parameter -Port.
+
+        .EXAMPLE
+        Connect-UDPClient -Server Value -Port Value
+        Describe what this call does
+
+        .NOTES
+        Place additional notes here.
+
+        .LINK
+        URLs to related sites
+        The first link is opened by Get-Help -Online Connect-UDPClient
+
+        .INPUTS
+        List of input types that are accepted by this function.
+
+        .OUTPUTS
+        List of output types produced by this function.
+    #>
+
+    param
+    (
+        # Parameter help description
+        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
+        [ValidateNotNullOrEmpty()]
+        [String]
+        $Server,
+
+        # Parameter help description
+        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
+        [ValidateNotNullOrEmpty()]
+        [ValidateRange(1, 65535)]
+        [UInt16]
+        $Port
+    )
+
+    # Create a UDP client Object
+    Try 
+    {
+        $UDPCLient = New-Object -TypeName System.Net.Sockets.UdpClient
+        $UDPCLient.Connect($Server, $Port)
+    }
+    Catch 
+    {
+        Throw $_
+    }
+
+    $UDPCLient
+}
+
+Function Connect-TCPClient
+{
+    <#
+        .SYNOPSIS
+        Describe purpose of "Connect-TCPClient" in 1-2 sentences.
+
+        .DESCRIPTION
+        Add a more complete description of what the function does.
+
+        .PARAMETER Server
+        Describe parameter -Server.
+
+        .PARAMETER Port
+        Describe parameter -Port.
+
+        .EXAMPLE
+        Connect-TCPClient -Server Value -Port Value
+        Describe what this call does
+
+        .NOTES
+        Place additional notes here.
+
+        .LINK
+        URLs to related sites
+        The first link is opened by Get-Help -Online Connect-TCPClient
+
+        .INPUTS
+        List of input types that are accepted by this function.
+
+        .OUTPUTS
+        List of output types produced by this function.
+    #>
+
+    param
+    (
+        # Parameter help description
+        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
+        [ValidateNotNullOrEmpty()]
+        [String]
+        $Server,
+
+        # Parameter help description
+        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
+        [ValidateNotNullOrEmpty()]
+        [ValidateRange(1, 65535)]
+        [UInt16]
+        $Port
+    )
+
+    # Create a TCP client Object
+    Try 
+    {
+        $TcpClient = New-Object -TypeName System.Net.Sockets.TcpClient
+        $TcpClient.Connect($Server, $Port)
+    }
+    Catch 
+    {
+        Throw $_
+    }
+
+    $TcpClient
+}
+
+Function Get-TCPWriter
+{
+    <#
+        .SYNOPSIS
+        Describe purpose of "Get-TCPWriter" in 1-2 sentences.
+
+        .DESCRIPTION
+        Add a more complete description of what the function does.
+
+        .PARAMETER TcpClient
+        Describe parameter -TcpClient.
+
+        .EXAMPLE
+        Get-TCPWriter -TcpClient Value
+        Describe what this call does
+
+        .NOTES
+        Place additional notes here.
+
+        .LINK
+        URLs to related sites
+        The first link is opened by Get-Help -Online Get-TCPWriter
+
+        .INPUTS
+        List of input types that are accepted by this function.
+
+        .OUTPUTS
+        List of output types produced by this function.
+    #>
+
+    param
+    (
+        # Parameter help description
+        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
+        [ValidateNotNullOrEmpty()]
+        [Net.Sockets.TcpClient]
+        $TcpClient
+    )
+
+    # Create TCP client, stream, and writer
+    Try 
+    {
+        $TcpStream = $TcpClient.GetStream()
+        $TcpWriter = New-Object -TypeName System.IO.StreamWriter -ArgumentList $TcpStream
+    }
+    Catch 
+    {
+        Throw $_
+    }
+    $TcpWriter
+}
+
+Function Send-UDPMessage
+{
+    <#
+        .SYNOPSIS
+        Describe purpose of "Disconnect-UDPClient" in 1-2 sentences.
+
+        .DESCRIPTION
+        Add a more complete description of what the function does.
+
+        .EXAMPLE
+        Disconnect-UDPClient
+        Describe what this call does
+
+        .NOTES
+        Place additional notes here.
+
+        .LINK
+        URLs to related sites
+        The first link is opened by Get-Help -Online Disconnect-UDPClient
+
+        .INPUTS
+        List of input types that are accepted by this function.
+
+        .OUTPUTS
+        List of output types produced by this function.
+    #>
+    
+    param
+    (
+        # Parameter help description
+        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
+        [ValidateNotNullOrEmpty()]
+        [Net.Sockets.UdpClient]
+        $UdpClient,
+
+        # Parameter help description
+        [Parameter(Mandatory = $true)]
+        [byte[]]
+        $Datagram
+    )
+    
+    $null = $UdpClient.Send($Datagram, $Datagram.Length)
+}
+
+Function Send-TCPMessage
+{
+    <#
+        .SYNOPSIS
+        Describe purpose of "Disconnect-UDPClient" in 1-2 sentences.
+
+        .DESCRIPTION
+        Add a more complete description of what the function does.
+
+        .EXAMPLE
+        Disconnect-UDPClient
+        Describe what this call does
+
+        .NOTES
+        Place additional notes here.
+
+        .LINK
+        URLs to related sites
+        The first link is opened by Get-Help -Online Disconnect-UDPClient
+
+        .INPUTS
+        List of input types that are accepted by this function.
+
+        .OUTPUTS
+        List of output types produced by this function.
+    #>
+
+}
+
+Function Disconnect-UDPClient
+{
+    <#
+        .SYNOPSIS
+        Describe purpose of "Disconnect-UDPClient" in 1-2 sentences.
+
+        .DESCRIPTION
+        Add a more complete description of what the function does.
+
+        .EXAMPLE
+        Disconnect-UDPClient
+        Describe what this call does
+
+        .NOTES
+        Place additional notes here.
+
+        .LINK
+        URLs to related sites
+        The first link is opened by Get-Help -Online Disconnect-UDPClient
+
+        .INPUTS
+        List of input types that are accepted by this function.
+
+        .OUTPUTS
+        List of output types produced by this function.
+    #>
+
+}
+
+Function Disconnect-TCPWriter
+{
+    <#
+        .SYNOPSIS
+        Describe purpose of "Disconnect-TCPWriter" in 1-2 sentences.
+
+        .DESCRIPTION
+        Add a more complete description of what the function does.
+
+        .EXAMPLE
+        Disconnect-TCPWriter
+        Describe what this call does
+
+        .NOTES
+        Place additional notes here.
+
+        .LINK
+        URLs to related sites
+        The first link is opened by Get-Help -Online Disconnect-TCPWriter
+
+        .INPUTS
+        List of input types that are accepted by this function.
+
+        .OUTPUTS
+        List of output types produced by this function.
+    #>
+
+}
+
+Function Disconnect-TCPClient
+{
+    <#
+        .SYNOPSIS
+        Describe purpose of "Disconnect-TCPWriter" in 1-2 sentences.
+
+        .DESCRIPTION
+        Add a more complete description of what the function does.
+
+        .EXAMPLE
+        Disconnect-TCPWriter
+        Describe what this call does
+
+        .NOTES
+        Place additional notes here.
+
+        .LINK
+        URLs to related sites
+        The first link is opened by Get-Help -Online Disconnect-TCPWriter
+
+        .INPUTS
+        List of input types that are accepted by this function.
+
+        .OUTPUTS
+        List of output types produced by this function.
+    #>
+
+}
+
+Function Send-SyslogMessage
 {
     <#
             .SYNOPSIS
@@ -49,7 +476,7 @@ function Send-SyslogMessage
             Sends a message to a SYSLOG server as defined in RFC 5424 and RFC 3164. 
 
             .INPUTS
-            Nothing can be piped directly into this function
+            TODO: Need to update this
 
             .OUTPUTS
             Nothing is output
@@ -58,10 +485,16 @@ function Send-SyslogMessage
             Send-SyslogMessage mySyslogserver "The server is down!" Emergency Mail
             Sends a syslog message to mysyslogserver, saying "server is down", severity emergency and facility is mail
 
+            .EXAMPLE
+            TODO: We need additional examples here
+
             .NOTES
             NAME: Send-SyslogMessage
-            AUTHOR: Kieran Jacobsen
-                    Jared Poeppelman
+            AUTHOR: Kieran Jacobsen    (kjacobsen)
+                    Jared Poeppelman   (powershellshock)
+                    Ronald Rink        (dfch)
+                    Xtrahost
+                    Fredruk Furtenbach (flic)
 
             .LINK
             https://github.com/poshsecurity/Posh-Syslog
@@ -74,7 +507,7 @@ function Send-SyslogMessage
     Param
     (
         #Destination SYSLOG server that message is to be sent to.
-        [Parameter(Mandatory = $true,
+        [Parameter( Mandatory = $true,
                     ValueFromPipeline = $false,
                     HelpMessage = 'Server to send message to')]
         [ValidateNotNullOrEmpty()]
@@ -82,7 +515,7 @@ function Send-SyslogMessage
         $Server,
 	
         #Our message or content that we want to send to the server. This is option in RFC 5424, the CMDLet still has this as a madatory parameter, to send no message, simply specifiy '-' (as per RFC).
-        [Parameter(Mandatory = $true,
+        [Parameter( Mandatory = $true,
                     ValueFromPipeline = $true,
                     HelpMessage = 'Message to send')]
         [ValidateNotNullOrEmpty()]
@@ -90,7 +523,7 @@ function Send-SyslogMessage
         $Message,
 	
         #Severity level as defined in SYSLOG specification, must be of ENUM type Syslog_Severity
-        [Parameter(Mandatory = $true,
+        [Parameter( Mandatory = $true,
                     ValueFromPipeline = $true,
                     HelpMessage = 'Messsage severity level')]
         [ValidateNotNullOrEmpty()]
@@ -98,7 +531,7 @@ function Send-SyslogMessage
         $Severity,
 	
         #Facility of message as defined in SYSLOG specification, must be of ENUM type Syslog_Facility
-        [Parameter(Mandatory = $true,
+        [Parameter( Mandatory = $true,
                     ValueFromPipeline = $true,
                     HelpMessage = 'Facility sending message')]
         [ValidateNotNullOrEmpty()]
@@ -106,21 +539,21 @@ function Send-SyslogMessage
         $Facility,
 	
         #Hostname of machine the message is about, if not specified, RFC 5425 selection rules will be followed.
-        [Parameter(Mandatory = $false,
+        [Parameter( Mandatory = $false,
                     ValueFromPipeline = $false)]
         [ValidateNotNullOrEmpty()]
         [String]
-        $Hostname = '',
+        $Hostname,
 	
         #Specify the name of the application or script that is sending the mesage. If not specified, will select the ScriptName, or if empty, powershell.exe will be sent. To send Null, specify '-' to meet RFC 5424. 
-        [Parameter(Mandatory = $false,
+        [Parameter( Mandatory = $false,
                     ValueFromPipeline = $true)]
         [ValidateNotNullOrEmpty()]
         [String]
-        $ApplicationName = '',
+        $ApplicationName,
 	
         #ProcessID or PID of generator of message. Will automatically use $PID global variable. If you want to override this and send null, specify '-' to meet RFC 5424 rquirements. This is only sent for RFC 5424 messages.
-        [Parameter(Mandatory = $false,
+        [Parameter( Mandatory = $false,
                     ValueFromPipeline = $true,
                     ParameterSetName = 'RFC5424')]
         [ValidateNotNullOrEmpty()]
@@ -128,7 +561,7 @@ function Send-SyslogMessage
         $ProcessID = $PID,
 	
         #Error message or troubleshooting number associated with the message being sent. If you want to override this and send null, specify '-' to meet RFC 5424 rquirements. This is only sent for RFC 5424 messages.
-        [Parameter(Mandatory = $false,
+        [Parameter( Mandatory = $false,
                     ValueFromPipeline = $true,
                     ParameterSetName = 'RFC5424')]
         [ValidateNotNullOrEmpty()]
@@ -136,7 +569,7 @@ function Send-SyslogMessage
         $MessageID = '-',
 	
         #Key Pairs of structured data as a string as defined in RFC5424. Default will be '-' which means null. This is only sent for RFC 5424 messages.
-        [Parameter(Mandatory = $false,
+        [Parameter( Mandatory = $false,
                     ValueFromPipeline = $true,
                     ParameterSetName = 'RFC5424')]
         [ValidateNotNullOrEmpty()]
@@ -144,23 +577,23 @@ function Send-SyslogMessage
         $StructuredData = '-',
 	
         #Time and date of the message, must be of type DateTime. Correct format will be selected depending on RFC requested. If not specified, will call get-date to get appropriate date time.
-        [Parameter(Mandatory = $false,
+        [Parameter( Mandatory = $false,
                     ValueFromPipeline = $true)]
         [ValidateNotNullOrEmpty()]
         [DateTime] 
         $Timestamp = (Get-Date),
 	
         #SYSLOG UDP (or TCP) port to which to send the message. Defaults to 514, if not specified.
-        [Parameter(Mandatory = $false,
+        [Parameter( Mandatory = $false,
                     ValueFromPipeline = $false)]
         [ValidateNotNullOrEmpty()]
-        [ValidateRange(1,65535)]
+        [ValidateRange(1, 65535)]
         [Alias('UDPPort','TCPPort')]
         [UInt16]
         $Port = 514,
 
         # Transport protocol (TCP or UDP) over which the message will be sent. Default is UDP.
-        [Parameter(Mandatory = $false,
+        [Parameter( Mandatory = $false,
                     ValueFromPipeline = $false)]
         [ValidateNotNullOrEmpty()]
         [ValidateSet('UDP','TCP')]
@@ -168,195 +601,123 @@ function Send-SyslogMessage
         $Transport = 'UDP',
 
         # Framing method used for the message, default is 'Octet-Counting' (see RFC6587 section 3.4). This only applies when TCP is used for transport (no effect on UDP messages).
-        [Parameter(Mandatory = $false,
+        [Parameter( Mandatory = $false,
                     ValueFromPipeline = $false)]
         [ValidateNotNullOrEmpty()]
         [ValidateSet('Octet-Counting','Non-Transparent-Framing','None')]
         [String]
-        $FramingMethod='Octet-Counting',
+        $FramingMethod = 'Octet-Counting',
 	
         #Send an RFC3164 fomatted message instead of RFC5424.
-        [Parameter(Mandatory = $True,
+        [Parameter( Mandatory = $false,
                     ValueFromPipeline = $true,
                     ParameterSetName = 'RFC3164')]
         [switch]
-        $RFC3164,
-
-        #Enable static source IP detection for strict adherence to RFC 5424 (section 6.2.4), if FQDN is not available. Using this might reduce performance in high-volume scenarios.
-        [Parameter(Mandatory = $false,
-                    ValueFromPipeline = $false)]
-        [switch]
-        $DetectSourceIP
+        $RFC3164
     )
+    
     Begin 
     {
-        Write-Verbose "Starting the BEGIN block..."
+        Write-Debug -Message 'Starting the BEGIN block...'
 
         # Create an ASCII Encoding object
-        $Encoding = [System.Text.Encoding]::ASCII
-
-        if ($Hostname -eq '')
-        {            
-            Write-Verbose "No HOSTNAME value was provided, so automatic selection will now be attempted..."
-            <#
-            According to RFC 5424 (section 6.2.4), we need to send our HOSTNAME field as one of these 5 (in order of priority)
-            1.  FQDN
-            2.  Static IP address
-            3.  Hostname - Windows always has one of these, so this is our last resort
-            4.  Dynamic IP address - We will never get to this one
-            5.  the NILVALUE - or this one
-
-            Windows should always, in the worst case, have a result at 3, the hostname or computer name from which this command is run.
-            #>        
-            
-            # Get the IP global proprties of the local machine, to determine if an FQDN is available
-            #$ComputerName = [System.Net.Dns]::GetHostByName($Env:COMPUTERNAME).HostName
-            #([System.Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().Hostname) + '.' + ([System.Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().DomainName)
-            $IpGlobalProps = [System.Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties()
-
-
-            if ($IpGlobalProps.DomainName) # If a domain name (and therefore an FQDN) is available...
-            {          
-                Write-Verbose "Attempting FQDN detection for HOSTNAME value..."
-                $Hostname = ($IpGlobalProps.Hostname +'.'+ $IpGlobalProps.DomainName) # Use HOSTNAME Option 1 (FQDN), per RFC 5424 (section 6.2.4)
-                Write-Verbose "A domain suffix was detected in the global IP properties, so the FQDN ($Hostname) will be used as the HOSTNAME value."
-            }
-            else
-            {                              
-                Write-Verbose "A domain suffix was not detected in the global IP properties, so FQDN will not be used as the HOSTNAME value."
-                $StaticSourceIP = $null
-                if ($DetectSourceIP) 
-                {
-                    Write-Verbose "Attempting static source IP detection for HOSTNAME value..."
-                    # Get the static source IPv4 address that will be used to send the message, if there is one
-                    $RouteInfo = Test-NetConnection -ComputerName $Server -DiagnoseRouting -ErrorAction SilentlyContinue -InformationLevel Quiet
-
-                    # If it is a static address, use it as the HOSTNAME
-                    if ((Get-NetIPAddress -IPAddress $RouteInfo.SelectedSourceAddress.IPAddress).PrefixOrigin -eq 'Manual')
-                    {
-                        $StaticSourceIP = $RouteInfo.SelectedSourceAddress.IPAddress  # Use HOSTNAME Option 2, (static IP address), per RFC 5424 (section 6.2.4), but only if -DetectSourceIP used and source IP successfully detected
-                        $Hostname = $StaticSourceIP
-                        Write-Verbose "A statically assigned IP was detected as the source for the route to $Server, so the static IP ($Hostname) will be used as the HOSTNAME value."
-                    }
-                    else
-                    {
-                        Write-Verbose "A statically assigned IP was not detected as the source for the route to $Server, so an IP will not be used as the HOSTNAME value."         
-                    }
-                }
-                if ($null -eq $StaticSourceIP) # If static detection was not used or it did not detect a static IP...
-                {
-                    Write-Verbose "Falling back to hostname for HOSTNAME value..."
-                    $Hostname = $Env:COMPUTERNAME # Use HOSTNAME Option 3 (hostname), per RFC 5424 (section 6.2.4)
-                    Write-Verbose "The hostname ($Hostname) will be used as the HOSTNAME value."
-                }
-            }
-        }
-
-        # Get the calling script name, if there is one
-        if (($null -ne $myInvocation.ScriptName) -and ($myInvocation.ScriptName -ne ''))
-        {
-            $Caller = Split-Path -Leaf -Path $myInvocation.ScriptName
-            
-        }
-        else
-        {
-            $Caller = 'PowerShell'
-        }
+        $Encoding = [Text.Encoding]::ASCII
 
         # Initiate the required network objects
         Switch ($Transport)
         {        
             'UDP' 
             {
-                Write-Verbose 'Attempting to create the UDP client object'
-                # Create a UDP client Object
-                Try {
-                    $UDPCLient = New-Object -TypeName System.Net.Sockets.UdpClient
-                    $UDPCLient.Connect($Server, $Port)
-                }
-                Catch {
-                    Write-Error $_ -ErrorAction Stop
-                }
-                Write-Verbose 'Successfully created the UDP client object'
-            }          
+                $NetworkClient = Connect-UDPClient -Server $Server -Port $Port
+            }
+
             'TCP'
             {
-                Write-Verbose 'Attempting to create the TCP client, stream, and writer objects'
-                # Create TCP client, stream, and writer
-                Try {
-                    $TcpClient = New-Object System.Net.Sockets.TcpClient $Server, $Port
-                    $TcpStream = $TcpClient.GetStream()
-                    $TcpWriter = New-Object System.IO.StreamWriter $TcpStream
-                }
-                Catch {
-                    Write-Error $_ -ErrorAction Stop
-                }
-                Write-Verbose 'Successfully created the TCP client, stream, and writer objects'               
+                $NetworkClient = Connect-TCPClient -Server $Server -Port $Port
+                $TcpWriter = Get-TCPWriter -TcpClient $NetworkClient
             }
-        }  
-        Write-Verbose "Finished the BEGIN block"     
+        }
+        
+        # If the hostname parameter is not specified, then we need to determine the correct value to be sent.
+        if (-not $PSBoundParameters.ContainsKey('Hostname'))
+        {
+            Write-Verbose -Message 'Detecting correct HOSTNAME value (value not provided)...'
+            $Hostname = Get-SyslogHostname -Socket $NetworkClient.Client
+        }
+
+        # Get the calling script name, if there is one
+        if (($null -ne $myInvocation.ScriptName) -and ($myInvocation.ScriptName -ne ''))
+        {
+            $Caller = Split-Path -Leaf -Path $myInvocation.ScriptName
+        }
+        else
+        {
+            $Caller = 'PowerShell'
+        }
+        
+        Write-Debug -Message 'Finished the BEGIN block'     
     }
+    
     Process 
     {
-        Write-Verbose "Starting the PROCESS block..."
+        Write-Debug -Message 'Starting the PROCESS block...'
 
         # Evaluate the facility and severity based on the enum types
         $Facility_Number = $Facility.value__
         $Severity_Number = $Severity.value__
-        Write-Verbose "Syslog Facility is $Facility_Number, Severity is $Severity_Number"
+        Write-Verbose -Message ('Syslog Facility value is {0}, Severity value is {1}' -f $Facility_Number, $Severity_Number)
 
         # Calculate the PRI
         $Priority = ($Facility_Number * 8) + $Severity_Number
-        Write-Verbose "Priority (PRI) is $Priority"
+        Write-Verbose -Message ('Priority (PRI) is {0}' -f $Priority)
 
         # Set the APP-NAME
-        if ($ApplicationName -eq '')
+        if (-not $PSBoundParameters.ContainsKey('ApplicationName'))
         {
-            Write-Verbose "No APP-NAME value was provided, so it will be detected..."
+            Write-Verbose -Message ('No APP-NAME value was provided by caller, using previously detected value: {0}'-f $ApplicationName)
             $ApplicationName = $Caller
-            Write-Verbose "$ApplicationName will be used as the APP-NAME value."
-            
         }
 
-        if ($PSCmdlet.ParameterSetName -eq 'RFC3164')
+        Switch ($PSCmdlet.ParameterSetName)
         {
-            Write-Verbose 'Using RFC 3164 message format'
+            'RFC3164' 
+            {
+                Write-Verbose -Message 'Using RFC 3164 message format. Maxmimum length of 1024 bytes (section 4.1)'
 
-            #Get the timestamp
-            $FormattedTimestamp = (Get-Culture).TextInfo.ToTitleCase($Timestamp.ToString('MMM dd HH:mm:ss'))
-            
-            # Assemble the full syslog formatted Message
-            $FullSyslogMessage = '<{0}>{1} {2} {3} {4}' -f $Priority, $FormattedTimestamp, $Hostname, $ApplicationName, $Message
-            
-            # Set the max message length per RFC 3164 section 4.1
-            Write-Verbose 'Using RFC 3164 (section 4.1) max length of 1024 bytes'
-            [int]$MaxLength = 1024
-        }
-        else
-        {
-            Write-Verbose 'Using RFC 5424 message format'
-            
-            #Get the timestamp
-            $FormattedTimestamp = $Timestamp.ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
-            
-            # Assemble the full syslog formatted Message
-            $FullSyslogMessage = '<{0}>1 {1} {2} {3} {4} {5} {6} {7}' -f $Priority, $FormattedTimestamp, $Hostname, $ApplicationName, $ProcessID, $MessageID, $StructuredData, $Message
-            
-            # Set the max message length per RFC 5424 section 6.1
-            Write-Verbose 'Using RFC 5424 (section 6.1) max length of 2048 bytes'
-            [int]$MaxLength = 2048
-        }
+                #Get the timestamp
+                $FormattedTimestamp = (Get-Culture).TextInfo.ToTitleCase($Timestamp.ToString('MMM dd HH:mm:ss'))
+                
+                # Assemble the full syslog formatted Message
+                $FullSyslogMessage = '<{0}>{1} {2} {3} {4}' -f $Priority, $FormattedTimestamp, $Hostname, $ApplicationName, $Message
+                
+                # Set the max message length per RFC 3164 section 4.1            
+                $MaxLength = 1024
+            }
 
-        Write-Verbose "Message being attempted is: $FullSyslogMessage"
+            'RFC5424'
+            {
+                Write-Verbose -Message 'Using RFC 5424 message format. Maxmimum length of 2048 bytes.'
+            
+                #Get the timestamp
+                $FormattedTimestamp = $Timestamp.ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
+                
+                # Assemble the full syslog formatted Message
+                $FullSyslogMessage = '<{0}>1 {1} {2} {3} {4} {5} {6} {7}' -f $Priority, $FormattedTimestamp, $Hostname, $ApplicationName, $ProcessID, $MessageID, $StructuredData, $Message
+                
+                # Set the max message length per RFC 5424 section 6.1
+                $MaxLength = 2048
+            }
+        }
         
-        # If the message is too long, shorten it
-        if ($FullSyslogMessage.Length -gt $MaxLength)
+        Write-Verbose -Message ('Message being attempted is: {0}' -f $FullSyslogMessage)
+        
+        # Ensure that the message is not too long. We could just compare the strings length, however using the encoding is the more appropriate way of confirming the length in bytes.
+        if ($Encoding.GetByteCount($FullSyslogMessage) -gt $MaxLength)
         {
             $FullSyslogMessage = $FullSyslogMessage.Substring(0,$MaxLength)
-            Write-Verbose "Message was too long and was shortened to $MaxLength characters"
-            Write-Verbose "Shortened message is: $FullSyslogMessage"
+            Write-Verbose -Message ('Message was too long and was shortened to {0} characters' -f $MaxLength)
+            Write-Verbose -Message ('Shortened message is: {0}' -f $FullSyslogMessage)
         }
-
 
         Switch ($Transport)
         {
@@ -364,93 +725,104 @@ function Send-SyslogMessage
             {
                 # Convert into byte array representation
                 $ByteSyslogMessage = $Encoding.GetBytes($FullSyslogMessage)
-                Write-Verbose "Message raw bytes: $ByteSyslogMessage"
-                Write-Verbose ('Message raw bytes length: '+($ByteSyslogMessage.Count))
+                Write-Verbose -Message ('Message raw bytes: {0}' -f $ByteSyslogMessage)
+                Write-Verbose -Message ('Message raw bytes length: '+($ByteSyslogMessage.Count))
 
                 # Send the Message
-                Try {
-                    $null = $UDPCLient.Send($ByteSyslogMessage, $ByteSyslogMessage.Length)
+                Try 
+                {
+                    Send-UDPMessage -UdpClient $NetworkClient -Datagram $ByteSyslogMessage
                 }
-                Catch {
-                    Write-Error $_ -ErrorAction Stop
+                Catch 
+                {
+                    #TODO: Cleanup connections
+                    throw $_
                 }
-            }            
+            }
+
             'TCP'
             {
-                Write-Verbose "Framing method is: $FramingMethod"
+                Write-Verbose -Message ('Framing method is: {0}' -f $FramingMethod)
                 Switch ($FramingMethod) 
                 {  
                     'Octet-Counting' 
                     { 
                         $OctetCount = ($Encoding.GetBytes($FullSyslogMessage)).Length
                         $FramedSyslogMessage = '{0} {1}' -f $OctetCount, $FullSyslogMessage
-                        Write-Verbose "Framed message is: $FullSyslogMessage"
+                        Write-Verbose -Message ('Framed message is: {0}' -f $FullSyslogMessage)
                     }
                     'Non-Transparent-Framing' 
                     {
                         $FramedSyslogMessage = '{0}{1}' -f $FullSyslogMessage, "`n"
-                        Write-Verbose "Framed message is: $FullSyslogMessage"
+                        Write-Verbose -Message ('Framed message is: {0}' -f $FullSyslogMessage)
                     }
                     'None' 
                     {
                         $FramedSyslogMessage = $FullSyslogMessage
-                        Write-Verbose "No change to the message for framing type 'none'"  
+                        Write-Verbose -Message "No change to the message for framing type 'none'"  
                     }
                 }
                 
                 # Convert into byte array representation
                 $ByteSyslogMessage = $Encoding.GetBytes($FramedSyslogMessage)
-                Write-Verbose "Message raw bytes: $ByteSyslogMessage"
-                Write-Verbose ('Message raw bytes length: '+($ByteSyslogMessage.Count))
-
+                Write-Verbose -Message ('Message raw bytes: {0}' -f $ByteSyslogMessage)
+                Write-Verbose -Message ('Message raw bytes length: '+($ByteSyslogMessage.Count))
 
                 # Send the Message
-                Try {
+                Try 
+                {
                     $null = $TcpWriter.Write($ByteSyslogMessage, 0, $ByteSyslogMessage.Length)
                 }
-                Catch {
-                    Write-Error $_ -ErrorAction Stop
+                Catch 
+                {
+                    #TODO: Cleanup connections
+                    throw $_
                 }
             }
         }
-        Write-Verbose "Finished the PROCESS block" 
+
+        Write-Debug -Message 'Finished the PROCESS block' 
     }
+    
     End 
     {
-        Write-Verbose "Starting the END block..."
+        Write-Debug -Message 'Starting the END block...'
         
         # Clean up our network objects
+        #TODO: Move this to a separate internal function
         Switch ($Transport)
         {
             'UDP' 
             {
-                If ($UDPCLient)
+                If ($NetworkClient)
                 {
-                    Write-Verbose 'Cleaning up the UDP client object'
-                    $UDPCLient.Close()
+                    Write-Verbose -Message 'Cleaning up the UDP client object'
+                    $NetworkClient.Close()
                 }
             }          
             'TCP'
             {
+                $TcpStream = $TcpWriter.BaseStream
+                
                 If ($TcpWriter)
                 {
-                    Write-Verbose 'Cleaning up the TCP writer object'
+                    Write-Verbose -Message 'Cleaning up the TCP writer object'
                     $TcpWriter.Close()
                 }
 
                 If ($TcpStream)
                 {
-                    Write-Verbose 'Cleaning up the TCP stream object'
+                    Write-Verbose -Message 'Cleaning up the TCP stream object'
                     $TcpStream.Dispose()
                 }
 
-                If ($TcpClient)
+                If ($NetworkClient)
                 {
-                    Write-Verbose 'Cleaning up the TCP client object'
-                    $TcpClient.Close()
+                    Write-Verbose -Message 'Cleaning up the TCP client object'
+                    $NetworkClient.Close()
                 }
             }
         }
-        Write-Verbose "Finished the END block" 
+        Write-Debug -Message 'Finished the END block' 
     }
 }
