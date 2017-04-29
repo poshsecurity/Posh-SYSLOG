@@ -1,5 +1,4 @@
-﻿#requires -Version 2 -Modules NetTCPIP
-enum Syslog_Facility
+﻿enum Syslog_Facility
 {
     kern
     user
@@ -39,433 +38,6 @@ enum Syslog_Severity
     Debug
 }
 
-Function Get-SyslogHostname
-{
-    <#
-        .SYNOPSIS
-        Describe purpose of "Get-SyslogHostname" in 1-2 sentences.
-
-        .DESCRIPTION
-        Add a more complete description of what the function does.
-
-        .PARAMETER Socket
-        Describe parameter -Socket.
-
-        .EXAMPLE
-        Get-SyslogHostname -Socket Value
-        Describe what this call does
-
-        .NOTES
-        Place additional notes here.
-
-        .LINK
-        URLs to related sites
-        The first link is opened by Get-Help -Online Get-SyslogHostname
-
-        .INPUTS
-        List of input types that are accepted by this function.
-
-        .OUTPUTS
-        List of output types produced by this function.
-    #>
-
-    Param
-    (
-        # Socket of the Client
-        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
-        [Net.Sockets.Socket]
-        $Socket
-    )
-
-    <#
-            According to RFC 5424 (section 6.2.4), we need to send our HOSTNAME field as one of these 5 (in order of priority)
-            1.  FQDN
-            2.  Static IP address
-            3.  Hostname - Windows always has one of these, so this is our last resort
-            4.  Dynamic IP address - We will never get to this one
-            5.  the NILVALUE - or this one
-
-            Windows should always, in the worst case, have a result at 3, the hostname or computer name from which this command is run.
-    #>        
-    
-    # Get the Win32_ComputerSystem object
-    $Win32_ComputerSystem = Get-WmiObject -Class win32_computersystem
-
-    if ($Win32_ComputerSystem.partofdomain) # If domain joined
-    {
-        # Use HOSTNAME Option 1 (FQDN), per RFC 5424 (section 6.2.4)
-        $Hostname = '{0}.{1}' -f $Win32_ComputerSystem.DNSHostname, $Win32_ComputerSystem.Domain
-        
-        Write-Verbose -Message ('The machine is joined to an Active Directory domain, hostname value will be FQDN: {0}' -f $Hostname)
-    }
-    else
-    {
-        # Ask the appropriate client what the local endpoint address is
-        $LocalEndPoint = $Socket.LocalEndpoint.Address.IPAddressToString
-
-        # Get the adapter that the endpoint is assigned to
-        $NetworkAdapter = Get-NetIPAddress -IPAddress $LocalEndPoint
-
-        # Is that local endpoint a statically assigned ip address?
-        if ($NetworkAdapter.PrefixOrigin -eq 'Manual')
-        {
-            # Use HOSTNAME Option 2 (Static IP address), per RFC 5424 (section 6.2.4)
-            $Hostname = $LocalEndPoint
-
-            Write-Verbose -Message ('A statically assigned IP was detected as the source for the route to {0}, so the static IP ({1}) will be used as the HOSTNAME value.' -f $Socket.RemoteEndPoint.Address.IPAddressToString, $Hostname)
-        }
-        else
-        {
-            # Use HOSTNAME Option 3 (hostname), per RFC 5424 (section 6.2.4)
-            $Hostname = $Env:COMPUTERNAME
-
-            Write-Verbose -Message ('The hostname ({0}) will be used as the HOSTNAME value.' -f $Hostname)
-        }
-    }
-
-    Write-Debug -Message ('Get-SyslogHostname is returning value {0}' -f $Hostname)
-
-    $Hostname
-}
-
-Function Connect-UDPClient
-{
-    <#
-        .SYNOPSIS
-        Describe purpose of "Connect-UDPClient" in 1-2 sentences.
-
-        .DESCRIPTION
-        Add a more complete description of what the function does.
-
-        .PARAMETER Server
-        Describe parameter -Server.
-
-        .PARAMETER Port
-        Describe parameter -Port.
-
-        .EXAMPLE
-        Connect-UDPClient -Server Value -Port Value
-        Describe what this call does
-
-        .NOTES
-        Place additional notes here.
-
-        .LINK
-        URLs to related sites
-        The first link is opened by Get-Help -Online Connect-UDPClient
-
-        .INPUTS
-        List of input types that are accepted by this function.
-
-        .OUTPUTS
-        List of output types produced by this function.
-    #>
-
-    param
-    (
-        # Parameter help description
-        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
-        [ValidateNotNullOrEmpty()]
-        [String]
-        $Server,
-
-        # Parameter help description
-        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
-        [ValidateNotNullOrEmpty()]
-        [ValidateRange(1, 65535)]
-        [UInt16]
-        $Port
-    )
-
-    # Create a UDP client Object
-    Try 
-    {
-        $UDPCLient = New-Object -TypeName System.Net.Sockets.UdpClient
-        $UDPCLient.Connect($Server, $Port)
-    }
-    Catch 
-    {
-        Throw $_
-    }
-
-    $UDPCLient
-}
-
-Function Connect-TCPClient
-{
-    <#
-        .SYNOPSIS
-        Describe purpose of "Connect-TCPClient" in 1-2 sentences.
-
-        .DESCRIPTION
-        Add a more complete description of what the function does.
-
-        .PARAMETER Server
-        Describe parameter -Server.
-
-        .PARAMETER Port
-        Describe parameter -Port.
-
-        .EXAMPLE
-        Connect-TCPClient -Server Value -Port Value
-        Describe what this call does
-
-        .NOTES
-        Place additional notes here.
-
-        .LINK
-        URLs to related sites
-        The first link is opened by Get-Help -Online Connect-TCPClient
-
-        .INPUTS
-        List of input types that are accepted by this function.
-
-        .OUTPUTS
-        List of output types produced by this function.
-    #>
-
-    param
-    (
-        # Parameter help description
-        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
-        [ValidateNotNullOrEmpty()]
-        [String]
-        $Server,
-
-        # Parameter help description
-        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
-        [ValidateNotNullOrEmpty()]
-        [ValidateRange(1, 65535)]
-        [UInt16]
-        $Port
-    )
-
-    # Create a TCP client Object
-    Try 
-    {
-        $TcpClient = New-Object -TypeName System.Net.Sockets.TcpClient
-        $TcpClient.Connect($Server, $Port)
-    }
-    Catch 
-    {
-        Throw $_
-    }
-
-    $TcpClient
-}
-
-Function Get-TCPWriter
-{
-    <#
-        .SYNOPSIS
-        Describe purpose of "Get-TCPWriter" in 1-2 sentences.
-
-        .DESCRIPTION
-        Add a more complete description of what the function does.
-
-        .PARAMETER TcpClient
-        Describe parameter -TcpClient.
-
-        .EXAMPLE
-        Get-TCPWriter -TcpClient Value
-        Describe what this call does
-
-        .NOTES
-        Place additional notes here.
-
-        .LINK
-        URLs to related sites
-        The first link is opened by Get-Help -Online Get-TCPWriter
-
-        .INPUTS
-        List of input types that are accepted by this function.
-
-        .OUTPUTS
-        List of output types produced by this function.
-    #>
-
-    param
-    (
-        # Parameter help description
-        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
-        [ValidateNotNullOrEmpty()]
-        [Net.Sockets.TcpClient]
-        $TcpClient
-    )
-
-    # Create TCP client, stream, and writer
-    Try 
-    {
-        $TcpStream = $TcpClient.GetStream()
-        $TcpWriter = New-Object -TypeName System.IO.StreamWriter -ArgumentList $TcpStream
-    }
-    Catch 
-    {
-        Throw $_
-    }
-    $TcpWriter
-}
-
-Function Send-UDPMessage
-{
-    <#
-        .SYNOPSIS
-        Describe purpose of "Disconnect-UDPClient" in 1-2 sentences.
-
-        .DESCRIPTION
-        Add a more complete description of what the function does.
-
-        .EXAMPLE
-        Disconnect-UDPClient
-        Describe what this call does
-
-        .NOTES
-        Place additional notes here.
-
-        .LINK
-        URLs to related sites
-        The first link is opened by Get-Help -Online Disconnect-UDPClient
-
-        .INPUTS
-        List of input types that are accepted by this function.
-
-        .OUTPUTS
-        List of output types produced by this function.
-    #>
-    
-    param
-    (
-        # Parameter help description
-        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
-        [ValidateNotNullOrEmpty()]
-        [Net.Sockets.UdpClient]
-        $UdpClient,
-
-        # Parameter help description
-        [Parameter(Mandatory = $true)]
-        [byte[]]
-        $Datagram
-    )
-    
-    $null = $UdpClient.Send($Datagram, $Datagram.Length)
-}
-
-Function Send-TCPMessage
-{
-    <#
-        .SYNOPSIS
-        Describe purpose of "Disconnect-UDPClient" in 1-2 sentences.
-
-        .DESCRIPTION
-        Add a more complete description of what the function does.
-
-        .EXAMPLE
-        Disconnect-UDPClient
-        Describe what this call does
-
-        .NOTES
-        Place additional notes here.
-
-        .LINK
-        URLs to related sites
-        The first link is opened by Get-Help -Online Disconnect-UDPClient
-
-        .INPUTS
-        List of input types that are accepted by this function.
-
-        .OUTPUTS
-        List of output types produced by this function.
-    #>
-
-}
-
-Function Disconnect-UDPClient
-{
-    <#
-        .SYNOPSIS
-        Describe purpose of "Disconnect-UDPClient" in 1-2 sentences.
-
-        .DESCRIPTION
-        Add a more complete description of what the function does.
-
-        .EXAMPLE
-        Disconnect-UDPClient
-        Describe what this call does
-
-        .NOTES
-        Place additional notes here.
-
-        .LINK
-        URLs to related sites
-        The first link is opened by Get-Help -Online Disconnect-UDPClient
-
-        .INPUTS
-        List of input types that are accepted by this function.
-
-        .OUTPUTS
-        List of output types produced by this function.
-    #>
-
-}
-
-Function Disconnect-TCPWriter
-{
-    <#
-        .SYNOPSIS
-        Describe purpose of "Disconnect-TCPWriter" in 1-2 sentences.
-
-        .DESCRIPTION
-        Add a more complete description of what the function does.
-
-        .EXAMPLE
-        Disconnect-TCPWriter
-        Describe what this call does
-
-        .NOTES
-        Place additional notes here.
-
-        .LINK
-        URLs to related sites
-        The first link is opened by Get-Help -Online Disconnect-TCPWriter
-
-        .INPUTS
-        List of input types that are accepted by this function.
-
-        .OUTPUTS
-        List of output types produced by this function.
-    #>
-
-}
-
-Function Disconnect-TCPClient
-{
-    <#
-        .SYNOPSIS
-        Describe purpose of "Disconnect-TCPWriter" in 1-2 sentences.
-
-        .DESCRIPTION
-        Add a more complete description of what the function does.
-
-        .EXAMPLE
-        Disconnect-TCPWriter
-        Describe what this call does
-
-        .NOTES
-        Place additional notes here.
-
-        .LINK
-        URLs to related sites
-        The first link is opened by Get-Help -Online Disconnect-TCPWriter
-
-        .INPUTS
-        List of input types that are accepted by this function.
-
-        .OUTPUTS
-        List of output types produced by this function.
-    #>
-
-}
-
 Function Send-SyslogMessage
 {
     <#
@@ -482,11 +54,12 @@ Function Send-SyslogMessage
             Nothing is output
 
             .EXAMPLE
-            Send-SyslogMessage mySyslogserver "The server is down!" Emergency Mail
+            Send-SyslogMessage -Server mySyslogserver -Message 'The server is down!' -Severity Emergency -Facility Mail
             Sends a syslog message to mysyslogserver, saying "server is down", severity emergency and facility is mail
 
             .EXAMPLE
-            TODO: We need additional examples here
+            Send-SyslogMessage -Server mySyslogserver -Message 'The server is up' -Severity Informational -Facility Mail -Transport TCP
+            Sends a syslog message to mysyslogserver, using TCP, saying "server is up", severity informational and facility is mail
 
             .NOTES
             NAME: Send-SyslogMessage
@@ -641,7 +214,7 @@ Function Send-SyslogMessage
         # If the hostname parameter is not specified, then we need to determine the correct value to be sent.
         if (-not $PSBoundParameters.ContainsKey('Hostname'))
         {
-            Write-Verbose -Message 'Detecting correct HOSTNAME value (value not provided)...'
+            Write-Verbose -Message 'No Hostname value provided, Detecting correct HOSTNAME value...'
             $Hostname = Get-SyslogHostname -Socket $NetworkClient.Client
         }
 
@@ -725,8 +298,6 @@ Function Send-SyslogMessage
             {
                 # Convert into byte array representation
                 $ByteSyslogMessage = $Encoding.GetBytes($FullSyslogMessage)
-                Write-Verbose -Message ('Message raw bytes: {0}' -f $ByteSyslogMessage)
-                Write-Verbose -Message ('Message raw bytes length: '+($ByteSyslogMessage.Count))
 
                 # Send the Message
                 Try 
@@ -751,11 +322,13 @@ Function Send-SyslogMessage
                         $FramedSyslogMessage = '{0} {1}' -f $OctetCount, $FullSyslogMessage
                         Write-Verbose -Message ('Framed message is: {0}' -f $FullSyslogMessage)
                     }
+
                     'Non-Transparent-Framing' 
                     {
                         $FramedSyslogMessage = '{0}{1}' -f $FullSyslogMessage, "`n"
                         Write-Verbose -Message ('Framed message is: {0}' -f $FullSyslogMessage)
                     }
+                    
                     'None' 
                     {
                         $FramedSyslogMessage = $FullSyslogMessage
@@ -765,13 +338,11 @@ Function Send-SyslogMessage
                 
                 # Convert into byte array representation
                 $ByteSyslogMessage = $Encoding.GetBytes($FramedSyslogMessage)
-                Write-Verbose -Message ('Message raw bytes: {0}' -f $ByteSyslogMessage)
-                Write-Verbose -Message ('Message raw bytes length: '+($ByteSyslogMessage.Count))
 
                 # Send the Message
                 Try 
                 {
-                    $null = $TcpWriter.Write($ByteSyslogMessage, 0, $ByteSyslogMessage.Length)
+                    Send-TCPMessage -TcpClient $NetworkClient -Datagram $ByteSyslogMessage
                 }
                 Catch 
                 {

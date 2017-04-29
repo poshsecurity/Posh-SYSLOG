@@ -1,73 +1,61 @@
 ﻿Import-Module $PSScriptRoot\Posh-SYSLOG.psm1 -Force
-Stop-Job -Name SYSLOGUDPTest -ErrorAction SilentlyContinue
-Remove-Job -Name SYSLOGUDPTest -Force -ErrorAction SilentlyContinue
-Stop-Job -Name SYSLOGTCPTest -ErrorAction SilentlyContinue
-Remove-Job -Name SYSLOGTCPTest -Force -ErrorAction SilentlyContinue
 
 Describe 'Send-SyslogMessage' {
     Mock -ModuleName Posh-SYSLOG Get-Date { return (New-Object datetime(2000,1,1)) }
     
-    Mock -ModuleName Posh-SYSLOG Get-WmiObject { return @{partofdomain = $false} }
+    Mock -ModuleName Posh-SYSLOG Get-CimInstance { return @{partofdomain = $false} }
 
-    $ENV:Computername = 'TestHostname'
-    
-    
     $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
-    
-    Function Test-UdpMessage ($SendSyslogMessage)
-    {
-        $GetSyslogPacket = {
-            $endpoint = New-Object System.Net.IPEndPoint ([IPAddress]::Any,514)
-            $udpclient= New-Object System.Net.Sockets.UdpClient 514
-            $content=$udpclient.Receive([ref]$endpoint)
-            [Text.Encoding]::ASCII.GetString($content)
+
+    # Create an ASCII Encoding object
+    $Encoding = [Text.Encoding]::ASCII
+
+    Context 'Get-SyslogHostname = UDP Client Tests' {
+        $UDPCLient = New-Object -TypeName System.Net.Sockets.UdpClient
+        $UDPCLient.Connect('127.0.0.1', '514')
+
+        It 'Uses the FQDN if the computer is domain joined' {
+            Mock -ModuleName Posh-SYSLOG Get-CimInstance { return @{partofdomain = $true; DNSHostname = 'TestHostname'; Domain = 'contoso.com'} }
+            $TestResult = Get-SyslogHostname -Socket $UDPCLient.Client
+            Mock -ModuleName Posh-SYSLOG Get-CimInstance { return @{partofdomain = $false} }
+            $TestResult | Should Be 'TestHostname.contoso.com'
         }
 
-        $null = start-job -Name SYSLOGUDPTest -ScriptBlock $GetSyslogPacket
-        Start-Sleep 2
-        Invoke-Expression $SendSyslogMessage
-        do
-        {
-            Start-Sleep 1
-        }          
-        until ((Get-Job -Name SYSLOGUDPTest | Select-Object -ExpandProperty State) -eq 'Completed')
-        $UDPResult = Receive-Job SYSLOGUDPTest
-        Remove-Job SYSLOGUDPTest
-        return $UDPResult
-    }
-
-    Function Test-TcpMessage ($SendSyslogMessage)
-    {
-        $GetSyslogTcpMsg = {
-            $endpoint = New-Object System.Net.IPEndPoint ([IPAddress]::Any,514)
-            $tcplistener= New-Object System.Net.Sockets.TcpListener $endpoint
-            $tcplistener.start()
-            $client = $tcplistener.AcceptTcpClient() # will block here until connection
-            $stream = $client.GetStream()
-            $reader = New-Object System.IO.StreamReader $stream   
-            $content = $reader.ReadToEnd()
-            $content
-            $reader.Dispose()
-            $stream.Dispose()
-            $client.Dispose()
-            $tcplistener.stop()
+        It 'Uses a Static IP address, on the correct interface that the server is reached on, if no FQDN and not hostname specified' {
+            Mock -ModuleName Posh-SYSLOG Get-NetIPAddress {return @{PrefixOrigin = 'Manual'}}
+            $TestResult = Get-SyslogHostname -Socket $UDPCLient.Client
+            $TestResult | Should Be '127.0.0.1'
         }
 
-        $null = start-job -Name SYSLOGTCPTest -ScriptBlock $GetSyslogTcpMsg
-        Start-Sleep 2
-        Invoke-Expression $SendSyslogMessage
-        do
-        {
-            Start-Sleep 1
-        }          
-        until ((Get-Job -Name SYSLOGTCPTest | Select-Object -ExpandProperty State) -eq 'Completed')
-        $TcpResult = Receive-Job SYSLOGTCPTest
-        Remove-Job SYSLOGTCPTest
-        return $TcpResult
+        It 'Uses the Windows computer name, if no static ip or FQDN' {
+            Mock -ModuleName Posh-SYSLOG Get-NetIPAddress {return $null} 
+            $TestResult = Get-SyslogHostname -Socket $UDPCLient.Client
+            $TestResult | Should Be 'TestHostname'
+        }
     }
 
-    Context 'Get-SyslogHostname = Tests' {
+    Context 'Get-SyslogHostname = TCP Client Tests' {
+        $TCPCLient = New-Object -TypeName System.Net.Sockets.TcpClient
+        $TCPCLient.Connect('127.0.0.1', '514')
 
+        It 'Uses the FQDN if the computer is domain joined' {
+            Mock -ModuleName Posh-SYSLOG Get-CimInstance { return @{partofdomain = $true; DNSHostname = 'TestHostname'; Domain = 'contoso.com'} }
+            $TestResult = Get-SyslogHostname -Socket $TCPCLient.Client
+            Mock -ModuleName Posh-SYSLOG Get-CimInstance { return @{partofdomain = $false} }
+            $TestResult | Should Be 'TestHostname.contoso.com'
+        }
+
+        It 'Uses a Static IP address, on the correct interface that the server is reached on, if no FQDN and not hostname specified' {
+            Mock -ModuleName Posh-SYSLOG Get-NetIPAddress {return @{PrefixOrigin = 'Manual'}}
+            $TestResult = Get-SyslogHostname -Socket $TCPCLient.Client
+            $TestResult | Should Be '127.0.0.1'
+        }
+
+        It 'Uses the Windows computer name, if no static ip or FQDN' {
+            Mock -ModuleName Posh-SYSLOG Get-NetIPAddress {return $null} 
+            $TestResult = Get-SyslogHostname -Socket $TCPCLient.Client
+            $TestResult | Should Be 'TestHostname'
+        }
     }
 
     Context 'Connect-UDPClient = Tests' {
@@ -91,6 +79,9 @@ Describe 'Send-SyslogMessage' {
     }
 
     Context 'Send-SyslogMessage = Parameter Validation' {
+        Mock -ModuleName Posh-SYSLOG Send-UDPMessage { return $null }
+        Mock -ModuleName Posh-SYSLOG Send-TCPMessage { return $null }
+
         It 'Should not accept a null value for the server' {
             {Send-SyslogMessage -Server $null -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'} | Should Throw 'The argument is null or empty'
         }
@@ -225,146 +216,149 @@ Describe 'Send-SyslogMessage' {
     }
 
     Context 'Send-SyslogMessage = Severity Level Calculations' {
+        Mock -CommandName Send-UDPMessage -ModuleName Posh-SYSLOG { $Global:TestResult = $Datagram; return $null }
+
         It 'Calculates the correct priority of 0 if Facility is Kern and Severity is Emergency' {
-            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Emergency' -Facility 'kern'"
-            $ExpectedResult = '<0>1 {0} TestHostname PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
-            $TestResult = Test-UdpMessage $TestCase
-            $TestResult | Should Be $ExpectedResult
+            $ExpectedResult = '<0>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $null =  Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Emergency' -Facility 'kern'
+            $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
         }
 
         It 'Calculates the correct priority of 7 if Facility is Kern and Severity is Debug' {
-            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Debug' -Facility 'kern'"
-            $ExpectedResult = '<7>1 {0} TestHostname PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
-            $TestResult = Test-UdpMessage $TestCase
-            $TestResult | Should Be $ExpectedResult
+            $ExpectedResult = '<7>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Debug' -Facility 'kern'
+            $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
         }   
 
         It 'Calculates the correct priority of 24 if Facility is daemon and Severity is Emergency' {
-            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Emergency' -Facility 'daemon'"
-            $ExpectedResult = '<24>1 {0} TestHostname PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
-            $TestResult = Test-UdpMessage $TestCase
-            $TestResult | Should Be $ExpectedResult
+            $ExpectedResult = '<24>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Emergency' -Facility 'daemon'
+            $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
         }
 
         It 'Calculates the correct priority of 31 if Facility is daemon and Severity is Debug' {
-            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Debug' -Facility 'daemon'"
-            $ExpectedResult = '<31>1 {0} TestHostname PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
-            $TestResult = Test-UdpMessage $TestCase
-            $TestResult | Should Be $ExpectedResult
+            $ExpectedResult = '<31>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Debug' -Facility 'daemon'
+            $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
         }
     }
 
     Context 'Send-SyslogMessage = RFC 3164 Message Format' {
+        Mock -CommandName Send-UDPMessage -ModuleName Posh-SYSLOG { $Global:TestResult = $Datagram; return $null }
+
         It 'Should send RFC5424 formatted message' {
-            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -RFC3164"
-            $ExpectedResult = '<33>Jan 01 00:00:00 TestHostname PowerShell Test Syslog Message'
-            $TestResult = Test-UdpMessage $TestCase
-            $TestResult | Should Be $ExpectedResult
+            $ExpectedResult = '<33>Jan 01 00:00:00 TestHostname Posh-SYSLOG.Tests.ps1 Test Syslog Message'
+            $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -RFC3164
+            $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
         }
     }
 
     Context 'Send-SyslogMessage = RFC 5424 message format' {
+        Mock -CommandName Send-UDPMessage -ModuleName Posh-SYSLOG { $Global:TestResult = $Datagram; return $null }
+
         It 'Should send RFC5424 formatted message' {
-            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'"
-            $ExpectedResult = '<33>1 {0} TestHostname PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
-            $TestResult = Test-UdpMessage $TestCase
-            $TestResult | Should Be $ExpectedResult
+            $ExpectedResult = '<33>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'
+            $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
         }
     }
 
     Context 'Send-SyslogMessage = Hostname determination' {
+        Mock -CommandName Send-UDPMessage -ModuleName Posh-SYSLOG { $Global:TestResult = $Datagram; return $null }
+
         It 'Uses any hostname it is given' {
-            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname 'SomeRandomHostName'"
-            $ExpectedResult = '<33>1 {0} SomeRandomHostName PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
-            $TestResult = Test-UdpMessage $TestCase
-            $TestResult | Should Be $ExpectedResult
+            $ExpectedResult = '<33>1 {0} SomeRandomHostName Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname 'SomeRandomHostName'
+            $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
         }
 
         It 'Uses the FQDN if the computer is domain joined' {
-            $ENV:userdnsdomain = 'contoso.com'
-            Mock -ModuleName Posh-SYSLOG Get-WmiObject { return @{partofdomain = $true; DNSHostname = 'TestHostname'; Domain = 'contoso.com'} }
+            Mock -ModuleName Posh-SYSLOG Get-CimInstance { return @{partofdomain = $true; DNSHostname = 'TestHostname'; Domain = 'contoso.com'} }
 
-            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'"
-            $ExpectedResult = '<33>1 {0} TestHostname.contoso.com PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
-            $TestResult = Test-UdpMessage $TestCase
-            $ENV:userdnsdomain = ''
-            Mock -ModuleName Posh-SYSLOG Get-WmiObject { return @{partofdomain = $false} }
+            $ExpectedResult = '<33>1 {0} TestHostname.contoso.com Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'
 
-            $TestResult | Should Be $ExpectedResult
+            Mock -ModuleName Posh-SYSLOG Get-CimInstance { return @{partofdomain = $false} }
+
+            $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
         }
 
         It 'Uses a Static IP address, on the correct interface that the server is reached on, if no FQDN and not hostname specified' {
             Mock -ModuleName Posh-SYSLOG Get-NetIPAddress {return @{PrefixOrigin = 'Manual'}}
 
-            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'"
-            $ExpectedResult = '<33>1 {0} 127.0.0.1 PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
-            $TestResult = Test-UdpMessage $TestCase
-            $TestResult | Should Be $ExpectedResult
+            $ExpectedResult = '<33>1 {0} 127.0.0.1 Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'
+            $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
         }
 
         It 'Uses the Windows computer name, if no static ip or FQDN' {
-            Mock -ModuleName Posh-SYSLOG Get-NetIPAddress {return $null} 
+            Mock -ModuleName Posh-SYSLOG Get-NetIPAddress {return $null}
 
-            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'"
-            $ExpectedResult = '<33>1 {0} TestHostname PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
-            $TestResult = Test-UdpMessage $TestCase
-            $TestResult | Should Be $ExpectedResult
+            $ExpectedResult = '<33>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'
+            $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
         }
     }
 
     Context 'Send-SyslogMessage = Message Length UDP' {
+        Mock -CommandName Send-UDPMessage -ModuleName Posh-SYSLOG { $Global:TestResult = $Datagram; return $null }
+
         $LongMsg = 'This is a very long syslog message. 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890'
 
         It 'truncates RFC 5424 messages to 2k' {
-            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message '$LongMsg' -Severity 'Alert' -Facility 'auth' -Hostname TestHostname"
-            $ExpectedResult = ('<33>1 {0} TestHostname PowerShell {1} - - {2}' -f $ExpectedTimeStamp, $PID, $LongMsg).Substring(0,2048)
-            $TestResult = Test-UdpMessage $TestCase
-            $TestResult | Should Be $ExpectedResult
+            $ExpectedResult = ('<33>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - {2}' -f $ExpectedTimeStamp, $PID, $LongMsg).Substring(0,2048)
+            $null = Send-SyslogMessage -Server '127.0.0.1' -Message $LongMsg -Severity 'Alert' -Facility 'auth' -Hostname TestHostname
+            $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
         }
         It 'truncates RFC 3164 messages to 1k' {
-            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message '$LongMsg' -Severity 'Alert' -Facility 'auth' -RFC3164 -Hostname TestHostname"
-            $ExpectedResult = ('<33>Jan 01 00:00:00 TestHostname PowerShell {1}' -f $ExpectedTimeStamp, $LongMsg).Substring(0,1024)
-            $TestResult = Test-UdpMessage $TestCase
-            $TestResult | Should Be $ExpectedResult
+            $ExpectedResult = ('<33>Jan 01 00:00:00 TestHostname Posh-SYSLOG.Tests.ps1 {1}' -f $ExpectedTimeStamp, $LongMsg).Substring(0,1024)
+            $null = Send-SyslogMessage -Server '127.0.0.1' -Message $LongMsg -Severity 'Alert' -Facility 'auth' -RFC3164 -Hostname TestHostname
+            $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
         }
     }
 
     Context 'Send-SyslogMessage = Message Length TCP' {
+        Mock -CommandName Send-TCPMessage -ModuleName Posh-SYSLOG { $Global:TestResult = $Datagram; return $null }
+
 
     }
 
     Context 'Send-SyslogMessage = TCP Specific Tests' {
+        Mock -CommandName Send-TCPMessage -ModuleName Posh-SYSLOG { $Global:TestResult = $Datagram; return $null }
+
         It 'sends using TCP transport' {
-            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname TestHostname -Transport TCP"
-            $ExpectedResult = '61 <33>1 {0} TestHostname PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
-            $TestResult = Test-TcpMessage $TestCase
-            $TestResult | Should Be $ExpectedResult
+            $ExpectedResult = '61 <33>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname TestHostname -Transport TCP
+            $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
         }
 
         It 'sends using TCP transport with Octet-Counting as the framing' {
-            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname TestHostname -Transport TCP -FramingMethod Octet-Counting"
-            $ExpectedResult = '61 <33>1 {0} TestHostname PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
-            $TestResult = Test-TcpMessage $TestCase
-            $TestResult | Should Be $ExpectedResult
+            $ExpectedResult = '61 <33>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname TestHostname -Transport TCP -FramingMethod Octet-Counting
+            $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
         }
         It 'sends using TCP transport with Non-Transparent-Framing as the framing' {
-            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname TestHostname -Transport TCP -FramingMethod Non-Transparent-Framing"
-            $ExpectedResult = '<33>1 {0} TestHostname PowerShell {1} - - Test Syslog Message`n' -f $ExpectedTimeStamp, $PID
-            $TestResult = Test-TcpMessage $TestCase
-            $TestResult | Should Be $ExpectedResult
+            $ExpectedResult = '<33>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message`n' -f $ExpectedTimeStamp, $PID
+            $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname TestHostname -Transport TCP -FramingMethod Non-Transparent-Framing
+            $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
         }
 
         It 'sends using TCP transport with no framing' {
-            $TestCase = "Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname TestHostname -Transport TCP -FramingMethod None"
-            $ExpectedResult = '<33>1 {0} TestHostname PowerShell {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
-            $TestResult = Test-TcpMessage $TestCase
-            $TestResult | Should Be $ExpectedResult
+            $ExpectedResult = '<33>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
+            $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname TestHostname -Transport TCP -FramingMethod None
+            $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
         }
 
     }
     #TODO: what about if we cannot connect to the TCP port? Need to test that!
 
+    Context 'Send-SyslogMessage = Application Name Selection' {
+        
+    }
+
     Context 'Send-SyslogMessage = Generic Tests' {
+        Mock -CommandName Send-UDPMessage -ModuleName Posh-SYSLOG { $Global:TestResult = $Datagram; return $null }
+
         It 'does not return any values' {
             $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'
             $TestCase | Should be $null
@@ -376,10 +370,4 @@ Describe 'Send-SyslogMessage' {
             Invoke-ScriptAnalyzer .\Functions\*.ps1 | Should be $null
         }
     }
-
-    Stop-Job -Name SYSLOGUDPTest -ErrorAction SilentlyContinue
-    Remove-Job -Name SYSLOGUDPTest -Force -ErrorAction SilentlyContinue
-    Stop-Job -Name SYSLOGTCPTest -ErrorAction SilentlyContinue
-    Remove-Job -Name SYSLOGTCPTest -Force -ErrorAction SilentlyContinue
-
 }
