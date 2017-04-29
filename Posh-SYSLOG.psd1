@@ -9,7 +9,7 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-# RootModule = ''
+RootModule = 'Posh-SYSLOG.psm1'
 
 # Version number of this module.
 ModuleVersion = '3.0.0'
@@ -36,7 +36,7 @@ Description = 'Send SYSLOG messages from PowerShell'
 # PowerShellHostName = ''
 
 # Minimum version of the Windows PowerShell host required by this module
-# PowerShellHostVersion = ''
+PowerShellHostVersion = '3.0'
 
 # Minimum version of Microsoft .NET Framework required by this module
 # DotNetFrameworkVersion = ''
@@ -48,7 +48,7 @@ Description = 'Send SYSLOG messages from PowerShell'
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-# RequiredModules = @()
+RequiredModules = @('NetTCPIP')
 
 # Assemblies that must be loaded prior to importing this module
 # RequiredAssemblies = @()
@@ -63,19 +63,19 @@ Description = 'Send SYSLOG messages from PowerShell'
 # FormatsToProcess = @()
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-NestedModules = @('.\Posh-SYSLOG.psm1')
+# NestedModules = @()
 
 # Functions to export from this module
 FunctionsToExport = 'Send-SyslogMessage'
 
 # Cmdlets to export from this module
-CmdletsToExport = ''
+CmdletsToExport = @()
 
 # Variables to export from this module
 VariablesToExport = ''
 
 # Aliases to export from this module
-AliasesToExport = ''
+AliasesToExport = @()
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()
