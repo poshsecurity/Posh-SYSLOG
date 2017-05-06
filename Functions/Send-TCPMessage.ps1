@@ -29,15 +29,16 @@ Function Send-TCPMessage
         # Parameter help description
         [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
         [ValidateNotNullOrEmpty()]
-        [Net.Sockets.TcpClient]
-        $TcpClient,
+        [System.IO.StreamWriter]
+        $TcpWriter,
 
         # Parameter help description
         [Parameter(Mandatory = $true)]
         [byte[]]
         $Datagram
     )
+    Write-Verbose ([Text.Encoding]::ASCII.GetString($Datagram)) -Verbose
 
-    $null = $TcpWriter.Write($ByteSyslogMessage, 0, $ByteSyslogMessage.Length)
+    $null = $TcpWriter.Write($Datagram, 0, $Datagram.Length)
 
 }
