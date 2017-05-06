@@ -77,7 +77,7 @@ Function Get-SyslogHostname
         else
         {
             # Use HOSTNAME Option 3 (hostname), per RFC 5424 (section 6.2.4)
-            $Hostname = $Env:COMPUTERNAME
+            $Hostname = $Win32_ComputerSystem.dnshostname
 
             Write-Verbose -Message ('The hostname ({0}) will be used as the HOSTNAME value.' -f $Hostname)
         }
