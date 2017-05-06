@@ -81,7 +81,7 @@ Function Send-SyslogMessage
     (
         #Destination SYSLOG server that message is to be sent to.
         [Parameter( Mandatory = $true,
-                    ValueFromPipeline = $false,
+                    ValueFromPipelineByPropertyName  = $false,
                     HelpMessage = 'Server to send message to')]
         [ValidateNotNullOrEmpty()]
         [String] 
@@ -89,7 +89,7 @@ Function Send-SyslogMessage
 	
         #Our message or content that we want to send to the server. This is option in RFC 5424, the CMDLet still has this as a madatory parameter, to send no message, simply specifiy '-' (as per RFC).
         [Parameter( Mandatory = $true,
-                    ValueFromPipeline = $true,
+                    ValueFromPipelineByPropertyName  = $true,
                     HelpMessage = 'Message to send')]
         [ValidateNotNullOrEmpty()]
         [String]
@@ -97,7 +97,7 @@ Function Send-SyslogMessage
 	
         #Severity level as defined in SYSLOG specification, must be of ENUM type Syslog_Severity
         [Parameter( Mandatory = $true,
-                    ValueFromPipeline = $true,
+                    ValueFromPipelineByPropertyName  = $true,
                     HelpMessage = 'Messsage severity level')]
         [ValidateNotNullOrEmpty()]
         [Syslog_Severity]
@@ -105,7 +105,7 @@ Function Send-SyslogMessage
 	
         #Facility of message as defined in SYSLOG specification, must be of ENUM type Syslog_Facility
         [Parameter( Mandatory = $true,
-                    ValueFromPipeline = $true,
+                    ValueFromPipelineByPropertyName  = $true,
                     HelpMessage = 'Facility sending message')]
         [ValidateNotNullOrEmpty()]
         [Syslog_Facility] 
@@ -113,21 +113,21 @@ Function Send-SyslogMessage
 	
         #Hostname of machine the message is about, if not specified, RFC 5425 selection rules will be followed.
         [Parameter( Mandatory = $false,
-                    ValueFromPipeline = $false)]
+                    ValueFromPipelineByPropertyName  = $false)]
         [ValidateNotNullOrEmpty()]
         [String]
         $Hostname,
 	
         #Specify the name of the application or script that is sending the mesage. If not specified, will select the ScriptName, or if empty, powershell.exe will be sent. To send Null, specify '-' to meet RFC 5424. 
         [Parameter( Mandatory = $false,
-                    ValueFromPipeline = $true)]
+                    ValueFromPipelineByPropertyName  = $true)]
         [ValidateNotNullOrEmpty()]
         [String]
         $ApplicationName,
 	
         #ProcessID or PID of generator of message. Will automatically use $PID global variable. If you want to override this and send null, specify '-' to meet RFC 5424 rquirements. This is only sent for RFC 5424 messages.
         [Parameter( Mandatory = $false,
-                    ValueFromPipeline = $true,
+                    ValueFromPipelineByPropertyName  = $true,
                     ParameterSetName = 'RFC5424')]
         [ValidateNotNullOrEmpty()]
         [String]
@@ -135,7 +135,7 @@ Function Send-SyslogMessage
 	
         #Error message or troubleshooting number associated with the message being sent. If you want to override this and send null, specify '-' to meet RFC 5424 rquirements. This is only sent for RFC 5424 messages.
         [Parameter( Mandatory = $false,
-                    ValueFromPipeline = $true,
+                    ValueFromPipelineByPropertyName  = $true,
                     ParameterSetName = 'RFC5424')]
         [ValidateNotNullOrEmpty()]
         [String]
@@ -143,7 +143,7 @@ Function Send-SyslogMessage
 	
         #Key Pairs of structured data as a string as defined in RFC5424. Default will be '-' which means null. This is only sent for RFC 5424 messages.
         [Parameter( Mandatory = $false,
-                    ValueFromPipeline = $true,
+                    ValueFromPipelineByPropertyName  = $true,
                     ParameterSetName = 'RFC5424')]
         [ValidateNotNullOrEmpty()]
         [String]
@@ -151,14 +151,14 @@ Function Send-SyslogMessage
 	
         #Time and date of the message, must be of type DateTime. Correct format will be selected depending on RFC requested. If not specified, will call get-date to get appropriate date time.
         [Parameter( Mandatory = $false,
-                    ValueFromPipeline = $true)]
+                    ValueFromPipelineByPropertyName  = $true)]
         [ValidateNotNullOrEmpty()]
         [DateTime] 
         $Timestamp = (Get-Date),
 	
         #SYSLOG UDP (or TCP) port to which to send the message. Defaults to 514, if not specified.
         [Parameter( Mandatory = $false,
-                    ValueFromPipeline = $false)]
+                    ValueFromPipelineByPropertyName  = $false)]
         [ValidateNotNullOrEmpty()]
         [ValidateRange(1, 65535)]
         [Alias('UDPPort','TCPPort')]
@@ -167,7 +167,7 @@ Function Send-SyslogMessage
 
         # Transport protocol (TCP or UDP) over which the message will be sent. Default is UDP.
         [Parameter( Mandatory = $false,
-                    ValueFromPipeline = $false)]
+                    ValueFromPipelineByPropertyName  = $false)]
         [ValidateNotNullOrEmpty()]
         [ValidateSet('UDP','TCP')]
         [String]
@@ -175,7 +175,7 @@ Function Send-SyslogMessage
 
         # Framing method used for the message, default is 'Octet-Counting' (see RFC6587 section 3.4). This only applies when TCP is used for transport (no effect on UDP messages).
         [Parameter( Mandatory = $false,
-                    ValueFromPipeline = $false)]
+                    ValueFromPipelineByPropertyName  = $false)]
         [ValidateNotNullOrEmpty()]
         [ValidateSet('Octet-Counting','Non-Transparent-Framing','None')]
         [String]
@@ -183,7 +183,6 @@ Function Send-SyslogMessage
 	
         #Send an RFC3164 fomatted message instead of RFC5424.
         [Parameter( Mandatory = $false,
-                    ValueFromPipeline = $true,
                     ParameterSetName = 'RFC3164')]
         [switch]
         $RFC3164
@@ -201,13 +200,28 @@ Function Send-SyslogMessage
         {        
             'UDP' 
             {
-                $NetworkClient = Connect-UDPClient -Server $Server -Port $Port
+                try 
+                {
+                    $NetworkClient = Connect-UDPClient -Server $Server -Port $Port
+                }
+                catch
+                {
+                    throw $_
+                }
             }
 
             'TCP'
             {
-                $NetworkClient = Connect-TCPClient -Server $Server -Port $Port
-                $TcpWriter = Get-TCPWriter -TcpClient $NetworkClient
+                try 
+                {
+                    $NetworkClient = Connect-TCPClient -Server $Server -Port $Port
+                    $TcpWriter = Get-TCPWriter -TcpClient $NetworkClient
+                }
+                catch
+                {
+                    throw $_
+                }
+                
             }
         }
         
@@ -306,7 +320,11 @@ Function Send-SyslogMessage
                 }
                 Catch 
                 {
-                    #TODO: Cleanup connections
+                    If ($null -ne $NetworkClient.client)
+                    {
+                        Write-Verbose -Message 'Cleaning up the UDP client object'
+                        Disconnect-UDPClient -UdpClient $NetworkClient
+                    }
                     throw $_
                 }
             }
@@ -320,13 +338,13 @@ Function Send-SyslogMessage
                     { 
                         $OctetCount = ($Encoding.GetBytes($FullSyslogMessage)).Length
                         $FramedSyslogMessage = '{0} {1}' -f $OctetCount, $FullSyslogMessage
-                        Write-Verbose -Message ('Framed message is: {0}' -f $FullSyslogMessage)
+                        Write-Verbose -Message ('Octet-Counting - Framed message is: {0}' -f $FullSyslogMessage)
                     }
 
                     'Non-Transparent-Framing' 
                     {
                         $FramedSyslogMessage = '{0}{1}' -f $FullSyslogMessage, "`n"
-                        Write-Verbose -Message ('Framed message is: {0}' -f $FullSyslogMessage)
+                        Write-Verbose -Message ('Non-Transparent-Framing - Framed message is: {0}' -f $FullSyslogMessage)
                     }
                     
                     'None' 
@@ -342,11 +360,22 @@ Function Send-SyslogMessage
                 # Send the Message
                 Try 
                 {
-                    Send-TCPMessage -TcpClient $NetworkClient -Datagram $ByteSyslogMessage
+                    Send-TCPMessage -TCPWriter $TcpWriter -Datagram $ByteSyslogMessage
                 }
                 Catch 
                 {
-                    #TODO: Cleanup connections
+                    If ($null -ne $TcpStream)
+                    {
+                        Write-Verbose -Message 'Cleaning up the TCP writer object'
+                        Disconnect-TCPWriter -TCPWriter $TcpWriter
+                    }
+
+                    If ($null -ne $NetworkClient.client)
+                    {
+                        Write-Verbose -Message 'Cleaning up the TCP client object'
+                        Disconnect-TCPClient -TcpClient $NetworkClient
+                    }
+
                     throw $_
                 }
             }
@@ -360,37 +389,28 @@ Function Send-SyslogMessage
         Write-Debug -Message 'Starting the END block...'
         
         # Clean up our network objects
-        #TODO: Move this to a separate internal function
         Switch ($Transport)
         {
             'UDP' 
             {
-                If ($NetworkClient)
+                If ($null -ne $NetworkClient.client)
                 {
-                    Write-Verbose -Message 'Cleaning up the UDP client object'
-                    $NetworkClient.Close()
+                     Write-Verbose -Message 'Cleaning up the UDP client object'
+                    Disconnect-UDPClient -UdpClient $NetworkClient
                 }
             }          
             'TCP'
-            {
-                $TcpStream = $TcpWriter.BaseStream
-                
-                If ($TcpWriter)
+            {               
+                If ($null -ne $TcpWriter)
                 {
                     Write-Verbose -Message 'Cleaning up the TCP writer object'
-                    $TcpWriter.Close()
+                    Disconnect-TCPWriter -TCPWriter $TcpWriter
                 }
 
-                If ($TcpStream)
-                {
-                    Write-Verbose -Message 'Cleaning up the TCP stream object'
-                    $TcpStream.Dispose()
-                }
-
-                If ($NetworkClient)
+                If ($null -ne $NetworkClient.client)
                 {
                     Write-Verbose -Message 'Cleaning up the TCP client object'
-                    $NetworkClient.Close()
+                    Disconnect-TCPClient -TcpClient $NetworkClient
                 }
             }
         }
