@@ -37,11 +37,11 @@ Function Get-TCPWriter
         $TcpClient
     )
 
-    # Create TCP client, stream, and writer
     Try 
     {
         $TcpStream = $TcpClient.GetStream()
         $TcpWriter = New-Object -TypeName System.IO.StreamWriter -ArgumentList $TcpStream
+        $TcpWriter.AutoFlush = $true
     }
     Catch 
     {

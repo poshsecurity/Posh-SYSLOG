@@ -24,5 +24,21 @@ Function Disconnect-TCPClient
         .OUTPUTS
         List of output types produced by this function.
     #>
+    param
+    (
+        # Parameter help description
+        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
+        [ValidateNotNullOrEmpty()]
+        [Net.Sockets.TcpClient]
+        $TcpClient
+    )
 
+    Try 
+    {
+        $TcpClient.Close()
+    }
+    Catch 
+    {
+        Throw $_
+    }
 }

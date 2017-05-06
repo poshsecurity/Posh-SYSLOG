@@ -24,5 +24,22 @@ Function Disconnect-UDPClient
         .OUTPUTS
         List of output types produced by this function.
     #>
+    param
+    (
+        # Parameter help description
+        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
+        [ValidateNotNullOrEmpty()]
+        [Net.Sockets.UdpClient]
+        $UdpClient
+    )
+
+    Try 
+    {
+        $UdpClient.Close()
+    }
+    Catch 
+    {
+        Throw $_
+    }
 
 }
