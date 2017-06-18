@@ -1,4 +1,4 @@
-Function Send-UDPMessage
+﻿Function Send-UDPMessage
 {
     <#
         .SYNOPSIS

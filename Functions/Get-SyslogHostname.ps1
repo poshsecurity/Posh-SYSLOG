@@ -1,4 +1,4 @@
-Function Get-SyslogHostname
+﻿Function Get-SyslogHostname
 {
     <#
         .SYNOPSIS
