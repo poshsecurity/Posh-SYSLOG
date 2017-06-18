@@ -1,7 +1,7 @@
 ﻿#TODO: what about if we cannot connect to the TCP port? Need to test that!
 #TODO: hostname resolution issues/errors need to be handled
 
-Import-Module $PSScriptRoot\Posh-SYSLOG.psm1 -Force
+Import-Module .\Posh-SYSLOG.psm1 -Force
 
 Describe 'Send-SyslogMessage' {
     Mock -ModuleName Posh-SYSLOG Get-Date { return (New-Object datetime(2000,1,1)) }
