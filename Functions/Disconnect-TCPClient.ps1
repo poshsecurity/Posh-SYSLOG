@@ -1,20 +1,20 @@
 Function Disconnect-TCPClient
 {
     <#
-        .SYNOPSIS
-        Disconnects/Closes a TCPClient Object
+            .SYNOPSIS
+            Disconnects/Closes a TCPClient Object
 
-        .DESCRIPTION
-        Internal function.
+            .DESCRIPTION
+            Internal function.
         
-        Disconnects/closes an open TCPClient.
+            Disconnects/closes an open TCPClient.
 
-        .EXAMPLE
-        Disconnect-TCPClient -TcpClient $Client
-        Closes the client $client.
+            .EXAMPLE
+            Disconnect-TCPClient -TcpClient $Client
+            Closes the client $client.
 
-        .OUTPUTS
-        None
+            .OUTPUTS
+            None
     #>
     
     [CmdletBinding()]
@@ -25,6 +25,7 @@ Function Disconnect-TCPClient
         [Parameter(Mandatory   = $true,
                    HelpMessage = 'TCP Client that is connected to an endpoint')]
         [ValidateNotNullOrEmpty()]
+        [Net.Sockets.TcpClient]
         $TcpClient
     )
 

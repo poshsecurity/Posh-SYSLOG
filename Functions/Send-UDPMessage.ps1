@@ -36,7 +36,7 @@ Function Send-UDPMessage
         $Datagram
     )
     
-    Write-Verbose ([Text.Encoding]::ASCII.GetString($Datagram)) -Verbose
+    Write-Verbose -Message ([Text.Encoding]::ASCII.GetString($Datagram)) -Verbose
 
     $null = $UdpClient.Send($Datagram, $Datagram.Length)
 }

@@ -36,7 +36,7 @@ Function Send-TCPMessage
         $Datagram
     )
 
-    Write-Verbose ([Text.Encoding]::ASCII.GetString($Datagram)) -Verbose
+    Write-Verbose -Message ([Text.Encoding]::ASCII.GetString($Datagram)) -Verbose
 
     $null = $TcpWriter.Write($Datagram, 0, $Datagram.Length)
 }
