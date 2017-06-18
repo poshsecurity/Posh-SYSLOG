@@ -76,7 +76,9 @@ Function Send-SyslogMessage
             https://poshsecurity.com
 
     #>
+    
     [CMDLetBinding(DefaultParameterSetName = 'RFC5424')]
+    [OutputType($null)]
     Param
     (
         #Destination SYSLOG server that message is to be sent to.

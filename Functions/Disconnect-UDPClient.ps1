@@ -2,32 +2,28 @@ Function Disconnect-UDPClient
 {
     <#
         .SYNOPSIS
-        Describe purpose of "Disconnect-UDPClient" in 1-2 sentences.
+        Disconnects/Closes a UdpClient Object
 
         .DESCRIPTION
-        Add a more complete description of what the function does.
+        Internal function.
+        
+        Disconnects/closes an open UdpClient.
 
         .EXAMPLE
-        Disconnect-UDPClient
-        Describe what this call does
-
-        .NOTES
-        Place additional notes here.
-
-        .LINK
-        URLs to related sites
-        The first link is opened by Get-Help -Online Disconnect-UDPClient
-
-        .INPUTS
-        List of input types that are accepted by this function.
+        Disconnect-UdpClient -UdpClient $Client
+        Closes the client $client.
 
         .OUTPUTS
-        List of output types produced by this function.
+        None
     #>
+
+    [CmdletBinding()]
+    [OutputType($null)]
     param
     (
-        # Parameter help description
-        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
+        # UdpClient that is connected to an endpoint
+        [Parameter(Mandatory   = $true,
+                   HelpMessage = 'UdpClient that is connected to an endpoint')]
         [ValidateNotNullOrEmpty()]
         [Net.Sockets.UdpClient]
         $UdpClient

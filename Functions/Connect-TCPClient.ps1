@@ -2,45 +2,35 @@ Function Connect-TCPClient
 {
     <#
         .SYNOPSIS
-        Describe purpose of "Connect-TCPClient" in 1-2 sentences.
+        Connects to a TCP server using the specified server (hostname or ip) and specified port and then returns a TCP client object.
 
         .DESCRIPTION
-        Add a more complete description of what the function does.
+        Internal function.
 
-        .PARAMETER Server
-        Describe parameter -Server.
-
-        .PARAMETER Port
-        Describe parameter -Port.
+        This function will create a connect to a TCP server on the specified port. The function will return a TCPClient object.
 
         .EXAMPLE
-        Connect-TCPClient -Server Value -Port Value
-        Describe what this call does
-
-        .NOTES
-        Place additional notes here.
-
-        .LINK
-        URLs to related sites
-        The first link is opened by Get-Help -Online Connect-TCPClient
-
-        .INPUTS
-        List of input types that are accepted by this function.
+        Connect-TCPClient -Server 'bob' -Port 80
+        Connect to the TCP Service on server bob, at port 80
 
         .OUTPUTS
-        List of output types produced by this function.
+        Returns a System.Net.Sockets.TCPClient
     #>
-
+    
+    [CmdletBinding()]
+    [OutputType([System.Net.Sockets.TcpClient])]
     param
     (
-        # Parameter help description
-        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
+        # Hostname or IP address of the server.
+        [Parameter(Mandatory   = $true,
+                   HelpMessage = 'Hostname or IP address of server')]
         [ValidateNotNullOrEmpty()]
         [String]
         $Server,
 
-        # Parameter help description
-        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
+        # Port of the server (1-65535)
+        [Parameter(Mandatory   = $true,
+                   HelpMessage = 'Port of the server (1-65535)')]
         [ValidateNotNullOrEmpty()]
         [ValidateRange(1, 65535)]
         [UInt16]

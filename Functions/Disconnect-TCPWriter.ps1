@@ -2,32 +2,28 @@ Function Disconnect-TCPWriter
 {
     <#
         .SYNOPSIS
-        Describe purpose of "Disconnect-TCPWriter" in 1-2 sentences.
+        Disconnects/Closes a TCPWriter Object
 
         .DESCRIPTION
-        Add a more complete description of what the function does.
+        Internal function.
+        
+        Disconnects/closes an open TCPWriter.
 
         .EXAMPLE
-        Disconnect-TCPWriter
-        Describe what this call does
-
-        .NOTES
-        Place additional notes here.
-
-        .LINK
-        URLs to related sites
-        The first link is opened by Get-Help -Online Disconnect-TCPWriter
-
-        .INPUTS
-        List of input types that are accepted by this function.
+        Disconnect-TCPWriter -TCPWriter $Writer
+        Closes the writer $Writer.
 
         .OUTPUTS
-        List of output types produced by this function.
+        None
     #>
+    
+    [CmdletBinding()]
+    [OutputType($null)]
     param
     (
-        # Parameter help description
-        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
+        # TcpWriter object
+        [Parameter(Mandatory   = $true,
+                   HelpMessage = 'TcpWriter object')]
         [ValidateNotNullOrEmpty()]
         [System.IO.StreamWriter]
         $TcpWriter
