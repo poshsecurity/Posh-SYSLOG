@@ -2,43 +2,41 @@ Function Send-TCPMessage
 {
     <#
         .SYNOPSIS
-        Describe purpose of "Disconnect-UDPClient" in 1-2 sentences.
+        Sends a datagram using the specified TCP writer
 
         .DESCRIPTION
-        Add a more complete description of what the function does.
+        Internal function.
+
+        This function will send a datagram using the specified TCP writer.
 
         .EXAMPLE
-        Disconnect-UDPClient
-        Describe what this call does
-
-        .NOTES
-        Place additional notes here.
-
-        .LINK
-        URLs to related sites
-        The first link is opened by Get-Help -Online Disconnect-UDPClient
-
-        .INPUTS
-        List of input types that are accepted by this function.
+        Send-TCPMessage -TcpWriter $Writer -Datagram $Message
+        Sends the datagram, or byte array, $Message using the specified TCP writer $writer.
 
         .OUTPUTS
-        List of output types produced by this function.
+        None
     #>
+
+    [CmdletBinding()]
+    [OutputType($null)]
     param
     (
-        # Parameter help description
-        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
+        # TCPWriter object, that is already connected to the TCP server.
+        [Parameter(Mandatory   = $true,
+                   HelpMessage = 'TCPWriter object, that is already connected to the TCP server')]
         [ValidateNotNullOrEmpty()]
         [System.IO.StreamWriter]
         $TcpWriter,
 
-        # Parameter help description
-        [Parameter(Mandatory = $true)]
+        # Byte array containing the datagram to be sent.
+        [Parameter(Mandatory   = $true,
+                   HelpMessage = 'Byte array containing the datagram to be sent')]
+        [ValidateNotNullOrEmpty()]
         [byte[]]
         $Datagram
     )
+
     Write-Verbose ([Text.Encoding]::ASCII.GetString($Datagram)) -Verbose
 
     $null = $TcpWriter.Write($Datagram, 0, $Datagram.Length)
-
 }

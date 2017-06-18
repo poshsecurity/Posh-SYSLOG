@@ -511,7 +511,7 @@ Describe 'Send-SyslogMessage' {
             $Encoding.GetString($Global:TestResult) | should be $FramedResult
         }
         It 'sends using TCP transport with Non-Transparent-Framing as the framing' {
-            $ExpectedResult = '<33>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message`n' -f $ExpectedTimeStamp, $PID
+            $ExpectedResult = '<33>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message{2}' -f $ExpectedTimeStamp, $PID, "`n"
             $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname TestHostname -Transport TCP -FramingMethod Non-Transparent-Framing
             $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
         }

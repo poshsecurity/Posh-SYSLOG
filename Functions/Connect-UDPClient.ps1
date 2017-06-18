@@ -2,45 +2,35 @@ Function Connect-UDPClient
 {
     <#
         .SYNOPSIS
-        Describe purpose of "Connect-UDPClient" in 1-2 sentences.
+        Connects to a UDP server using the specified server (hostname or ip) and specified port and then returns a UDP client object.
 
         .DESCRIPTION
-        Add a more complete description of what the function does.
+        Internal function.
 
-        .PARAMETER Server
-        Describe parameter -Server.
-
-        .PARAMETER Port
-        Describe parameter -Port.
+        This function will create a connect to a UDP server on the specified port. The function will return a UDPClient object.
 
         .EXAMPLE
-        Connect-UDPClient -Server Value -Port Value
-        Describe what this call does
-
-        .NOTES
-        Place additional notes here.
-
-        .LINK
-        URLs to related sites
-        The first link is opened by Get-Help -Online Connect-UDPClient
-
-        .INPUTS
-        List of input types that are accepted by this function.
+        Connect-UDPClient -Server 'bob' -Port 80
+        Connect to the UDP Service on server bob, at port 80
 
         .OUTPUTS
-        List of output types produced by this function.
+        Returns a System.Net.Sockets.UdpClient
     #>
 
+    [CmdletBinding()]
+    [OutputType([System.Net.Sockets.UdpClient])]
     param
     (
-        # Parameter help description
-        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
+        # Hostname or IP address of the server.
+        [Parameter(Mandatory   = $true,
+                   HelpMessage = 'Hostname or IP address of the server')]
         [ValidateNotNullOrEmpty()]
         [String]
         $Server,
 
-        # Parameter help description
-        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
+        # Port of the server (1-65535)
+        [Parameter(Mandatory   = $true,
+                   HelpMessage = 'Port of the server (1-65535)')]
         [ValidateNotNullOrEmpty()]
         [ValidateRange(1, 65535)]
         [UInt16]

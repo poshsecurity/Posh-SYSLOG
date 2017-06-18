@@ -2,52 +2,42 @@ Function Get-SyslogHostname
 {
     <#
         .SYNOPSIS
-        Describe purpose of "Get-SyslogHostname" in 1-2 sentences.
+        Returns the valid hostname to send to the SYSLOG server according to RFC 5424. The CMDLet will take a socket (either connected to a TCP or UDP client) and return the appropriate response.
 
         .DESCRIPTION
-        Add a more complete description of what the function does.
+        Internal Function.
 
-        .PARAMETER Socket
-        Describe parameter -Socket.
+        The purpose of this function is to determine the correct hostname to be sent by the client to the SYSLOG server according to RFC 5424, Section 6.2.4.
 
-        .EXAMPLE
-        Get-SyslogHostname -Socket Value
-        Describe what this call does
-
-        .NOTES
-        Place additional notes here.
-
-        .LINK
-        URLs to related sites
-        The first link is opened by Get-Help -Online Get-SyslogHostname
-
-        .INPUTS
-        List of input types that are accepted by this function.
-
-        .OUTPUTS
-        List of output types produced by this function.
-    #>
-
-    Param
-    (
-        # Socket of the Client
-        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
-        [ValidateNotNullOrEmpty()]
-        [Net.Sockets.Socket]
-        $Socket
-    )
-
-    <#
-            According to RFC 5424 (section 6.2.4), we need to send our HOSTNAME field as one of these 5 (in order of priority)
+        The hostname to be send should be one of these 5, in order of priority:
             1.  FQDN
             2.  Static IP address
             3.  Hostname - Windows always has one of these, so this is our last resort
             4.  Dynamic IP address - We will never get to this one
             5.  the NILVALUE - or this one
 
-            Windows should always, in the worst case, have a result at 3, the hostname or computer name from which this command is run.
-    #>        
-    
+        Windows should always, in the worst case, have a result at 3, the hostname or computer name from which this command is run.
+
+        .EXAMPLE
+        Get-SyslogHostname -Socket $Socket
+        Returns the correct hostname to be sent.
+
+        .OUTPUTS
+        List of output types produced by this function.
+    #>
+
+    [CmdletBinding()]
+    [OutputType([String])]
+    Param
+    (
+        # Socket of the Client
+        [Parameter(Mandatory   = $true,
+                   HelpMessage = 'Add help message for user')]
+        [ValidateNotNullOrEmpty()]
+        [Net.Sockets.Socket]
+        $Socket
+    )
+
     # Get the Win32_ComputerSystem object
     $Win32_ComputerSystem =  Get-CimInstance -ClassName win32_computersystem
 

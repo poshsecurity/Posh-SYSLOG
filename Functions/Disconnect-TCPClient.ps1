@@ -2,34 +2,29 @@ Function Disconnect-TCPClient
 {
     <#
         .SYNOPSIS
-        Describe purpose of "Disconnect-TCPWriter" in 1-2 sentences.
+        Disconnects/Closes a TCPClient Object
 
         .DESCRIPTION
-        Add a more complete description of what the function does.
+        Internal function.
+        
+        Disconnects/closes an open TCPClient.
 
         .EXAMPLE
-        Disconnect-TCPWriter
-        Describe what this call does
-
-        .NOTES
-        Place additional notes here.
-
-        .LINK
-        URLs to related sites
-        The first link is opened by Get-Help -Online Disconnect-TCPWriter
-
-        .INPUTS
-        List of input types that are accepted by this function.
+        Disconnect-TCPClient -TcpClient $Client
+        Closes the client $client.
 
         .OUTPUTS
-        List of output types produced by this function.
+        None
     #>
+    
+    [CmdletBinding()]
+    [OutputType($null)]
     param
     (
-        # Parameter help description
-        [Parameter(Mandatory = $true,HelpMessage='Add help message for user')]
+        # TCP Client that is connected to an endpoint
+        [Parameter(Mandatory   = $true,
+                   HelpMessage = 'TCP Client that is connected to an endpoint')]
         [ValidateNotNullOrEmpty()]
-        [Net.Sockets.TcpClient]
         $TcpClient
     )
 
