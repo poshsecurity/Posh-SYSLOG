@@ -1,4 +1,4 @@
-Function Get-TCPWriter
+﻿Function Get-TCPWriter
 {
     <#
         .SYNOPSIS

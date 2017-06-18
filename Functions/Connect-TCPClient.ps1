@@ -1,4 +1,4 @@
-Function Connect-TCPClient
+﻿Function Connect-TCPClient
 {
     <#
         .SYNOPSIS

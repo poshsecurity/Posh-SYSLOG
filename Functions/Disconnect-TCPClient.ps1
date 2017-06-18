@@ -1,4 +1,4 @@
-Function Disconnect-TCPClient
+﻿Function Disconnect-TCPClient
 {
     <#
             .SYNOPSIS

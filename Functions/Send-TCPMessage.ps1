@@ -1,4 +1,4 @@
-Function Send-TCPMessage
+﻿Function Send-TCPMessage
 {
     <#
         .SYNOPSIS

@@ -1,4 +1,4 @@
-Function Connect-UDPClient
+﻿Function Connect-UDPClient
 {
     <#
         .SYNOPSIS

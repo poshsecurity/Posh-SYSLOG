@@ -1,4 +1,4 @@
-Function Disconnect-TCPWriter
+﻿Function Disconnect-TCPWriter
 {
     <#
         .SYNOPSIS

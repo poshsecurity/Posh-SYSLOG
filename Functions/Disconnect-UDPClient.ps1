@@ -1,4 +1,4 @@
-Function Disconnect-UDPClient
+﻿Function Disconnect-UDPClient
 {
     <#
         .SYNOPSIS
