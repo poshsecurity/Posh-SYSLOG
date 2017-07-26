@@ -12,7 +12,7 @@
 RootModule = 'Posh-SYSLOG.psm1'
 
 # Version number of this module.
-ModuleVersion = '3.0.1'
+ModuleVersion = '3.0.2'
 
 # ID used to uniquely identify this module
 GUID = '6c03881f-48f0-4a55-914d-a6ee33d019e7'
@@ -48,7 +48,7 @@ PowerShellHostVersion = '3.0'
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-# RequiredModules = @()
+RequiredModules = @('NetTCPIP')
 
 # Assemblies that must be loaded prior to importing this module
 # RequiredAssemblies = @()
