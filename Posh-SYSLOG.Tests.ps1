@@ -549,7 +549,7 @@ Describe 'Send-SyslogMessage' {
         }
     }
 
-    Context 'Scrypt Analyzer' {
+    Context 'Script Analyzer' {
         It 'Does not have any issues with the Script Analyser' {
             Invoke-ScriptAnalyzer .\Functions\*.ps1 | Should be $null
         }
