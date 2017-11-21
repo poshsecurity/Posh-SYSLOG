@@ -1,42 +1,46 @@
-﻿enum Syslog_Facility
+﻿Add-Type -TypeDefinition @"
+public enum Syslog_Facility
 {
-    kern
-    user
-    mail
-    daemon
-    auth
-    syslog
-    lpr
-    news
-    uucp
-    clock
-    authpriv
-    ftp
-    ntp
-    logaudit
-    logalert
-    cron
-    local0
-    local1
-    local2
-    local3
-    local4
-    local5
-    local6
-    local7
+    kern,
+    user,
+    mail,
+    daemon,
+    auth,
+    syslog,
+    lpr,
+    news,
+    uucp,
+    clock,
+    authpriv,
+    ftp,
+    ntp,
+    logaudit,
+    logalert,
+    cron, 
+    local0,
+    local1,
+    local2,
+    local3,
+    local4,
+    local5,
+    local6,
+    local7,
 }
+"@
 
-enum Syslog_Severity
+Add-Type -TypeDefinition @"
+public enum Syslog_Severity
 {
-    Emergency
-    Alert
-    Critical
-    Error
-    Warning
-    Notice
-    Informational
+    Emergency,
+    Alert,
+    Critical,
+    Error,
+    Warning,
+    Notice,
+    Informational,
     Debug
 }
+"@
 
 Function Send-SyslogMessage
 {

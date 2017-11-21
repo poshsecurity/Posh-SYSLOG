@@ -12,7 +12,7 @@
 RootModule = 'Posh-SYSLOG.psm1'
 
 # Version number of this module.
-ModuleVersion = '3.0.2'
+ModuleVersion = '3.1.0'
 
 # ID used to uniquely identify this module
 GUID = '6c03881f-48f0-4a55-914d-a6ee33d019e7'
@@ -104,7 +104,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'Introduces TCP support for sending messages. This work was provided by Jared (@PowershellShock).'
+        ReleaseNotes = 'Fixes issues with PowerShell 4.0 as reported by @Cris70 and @Powernap on GitHub'
 
     } # End of PSData hashtable
 
