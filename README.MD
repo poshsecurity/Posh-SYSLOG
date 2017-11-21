@@ -46,4 +46,4 @@ PS> Uninstall-Module -Name Posh-SYSLOG
 
 ## License
 
-Posh-SYSLOG is provided under the [MIT license](LICENSE.md).
+Posh-SYSLOG is provided under the [MIT license](LICENSE.MD).
