@@ -36,7 +36,7 @@
         $Datagram
     )
 
-    Write-Verbose -Message ([Text.Encoding]::ASCII.GetString($Datagram)) -Verbose
+    Write-Verbose -Message ([Text.Encoding]::ASCII.GetString($Datagram))
 
     $null = $TcpWriter.Write($Datagram, 0, $Datagram.Length)
 }
