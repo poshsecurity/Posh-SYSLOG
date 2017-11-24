@@ -106,6 +106,8 @@ PrivateData = @{
         # ReleaseNotes of this module
         ReleaseNotes = 'Fixes issues with PowerShell 4.0 as reported by @Cris70 and @Powernap on GitHub'
 
+        ExternalModuleDependencies = @('NetTCPIP')
+
     } # End of PSData hashtable
 
 } # End of PrivateData hashtable
