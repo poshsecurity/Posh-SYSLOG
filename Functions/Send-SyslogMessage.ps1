@@ -82,7 +82,6 @@ Function Send-SyslogMessage
     #>
     
     [CMDLetBinding(DefaultParameterSetName = 'RFC5424')]
-    [OutputType($null)]
     Param
     (
         #Destination SYSLOG server that message is to be sent to.
