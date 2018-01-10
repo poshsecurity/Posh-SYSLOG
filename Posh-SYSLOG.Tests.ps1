@@ -19,7 +19,45 @@ Describe 'Send-SyslogMessage' {
     $TCPListener.start()
 
     Context 'Get-NetworkAdapter = Tests' {
-        
+        It 'Does not accept null IP Address' {
+            {Get-NetworkAdapter -IPAddress $null} | Should Throw
+        }
+
+        It 'Does not accept empty string for an IP Address' {
+            {Get-NetworkAdapter -IPAddress ''} | Should Throw
+        }
+
+        It 'Does not accept invalid IP Addresses (1)' {
+            {Get-NetworkAdapter -IPAddress 'cat'} | Should Throw
+        }
+
+        It 'Does not accept invalid IP Addresses (2)' {
+            {Get-NetworkAdapter -IPAddress '321.321.321.321'} | Should Throw
+        }
+
+        It 'Does not accept invalid IP Addresses (3)' {
+            {Get-NetworkAdapter -IPAddress '321.123.123.123'} | Should Throw
+        }
+
+        It 'Does not accept invalid IP Addresses (4)' {
+            {Get-NetworkAdapter -IPAddress '123.321.123.123'} | Should Throw
+        }
+
+        It 'Does not accept invalid IP Addresses (5)' {
+            {Get-NetworkAdapter -IPAddress '123.123.321.123'} | Should Throw
+        }
+
+        It 'Does not accept invalid IP Addresses (6)' {
+            {Get-NetworkAdapter -IPAddress '123.123.123.321'} | Should Throw
+        }
+
+        It 'Does not accept invalid IP Addresses (7)' {
+            {Get-NetworkAdapter -IPAddress '123'} | Should Throw
+        }
+
+        It 'Does accept a valid ip address' {
+            {Get-NetworkAdapter -IPAddress '123.123.123.123'} | Should Not Throw
+        }
     }
 
     Context 'Get-SyslogHostname = UDP Client Tests' {
