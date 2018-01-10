@@ -12,7 +12,7 @@
 RootModule = 'Posh-SYSLOG.psm1'
 
 # Version number of this module.
-ModuleVersion = '3.1.1'
+ModuleVersion = '3.2.0'
 
 # ID used to uniquely identify this module
 GUID = '6c03881f-48f0-4a55-914d-a6ee33d019e7'
@@ -48,7 +48,7 @@ PowerShellHostVersion = '3.0'
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-RequiredModules = @('NetTCPIP')
+# RequiredModules = @()
 
 # Assemblies that must be loaded prior to importing this module
 # RequiredAssemblies = @()
@@ -104,10 +104,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'Fixes issues with PowerShell 4.0 as reported by @Cris70 and @Powernap on GitHub'
-
-        ExternalModuleDependencies = @('NetTCPIP')
-
+        ReleaseNotes = 'Removed dependency on NetTCPIP allowing for execution on PowerShell Core'
     } # End of PSData hashtable
 
 } # End of PrivateData hashtable
