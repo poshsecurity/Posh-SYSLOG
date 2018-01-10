@@ -277,8 +277,25 @@ Function Send-SyslogMessage
                 Write-Verbose -Message 'Using RFC 3164 message format. Maxmimum length of 1024 bytes (section 4.1)'
 
                 #Get the timestamp
-                $FormattedTimestamp = (Get-Culture).TextInfo.ToTitleCase($Timestamp.ToString('MMM dd HH:mm:ss'))
+                <#
+                    The TIMESTAMP field is the local time and is in the format of "Mmm dd
+                    hh:mm:ss" (without the quote marks) where:
+                    ...
+                    dd is the day of the month. If the day of the month is less
+                    than 10, then it MUST be represented as a space and then the
+                    number. For example, the 7th day of August would be
+                    represented as "Aug  7", with two spaces between the "g" and
+                    the "7".
+                #>
                 
+                if ($Timestamp.Day.tostring().length -eq 1) {
+                    $FormattedTimestamp = (Get-Culture).TextInfo.ToTitleCase($Timestamp.ToString('MMM  d HH:mm:ss'))
+                }
+                else
+                {
+                    $FormattedTimestamp = (Get-Culture).TextInfo.ToTitleCase($Timestamp.ToString('MMM dd HH:mm:ss'))
+                }
+
                 # Assemble the full syslog formatted Message
                 $FullSyslogMessage = '<{0}>{1} {2} {3} {4}' -f $Priority, $FormattedTimestamp, $Hostname, $ApplicationName, $Message
                 

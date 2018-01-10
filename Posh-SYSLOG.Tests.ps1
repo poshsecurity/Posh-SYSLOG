@@ -405,7 +405,7 @@ Describe 'Send-SyslogMessage' {
                 Timestamp       = $ExpectedTimeStamp
                 RFC3164         = $true
             }
-            $ExpectedResult = '<0>Jan 01 00:00:00 TestHostname RandomAppName Test Syslog Message'
+            $ExpectedResult = '<0>Jan  1 00:00:00 TestHostname RandomAppName Test Syslog Message'
             $null =  $PipelineInput | Send-SyslogMessage -Server 'localhost' -RFC3164
             $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
         }
@@ -442,8 +442,18 @@ Describe 'Send-SyslogMessage' {
     Context 'Send-SyslogMessage = RFC 3164 Message Format' {
         Mock -CommandName Send-UDPMessage -ModuleName Posh-SYSLOG { $Global:TestResult = $Datagram; return $null }
 
-        It 'Should send RFC5424 formatted message' {
-            $ExpectedResult = '<33>Jan 01 00:00:00 TestHostname Posh-SYSLOG.Tests.ps1 Test Syslog Message'
+        It 'Should send RFC5424 formatted message with correct date format (10 to 31)' {
+            Mock -ModuleName Posh-SYSLOG Get-Date { return (New-Object datetime(2000,1,10)) }
+
+            $ExpectedResult = '<33>Jan 10 00:00:00 TestHostname Posh-SYSLOG.Tests.ps1 Test Syslog Message'
+            $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -RFC3164
+            $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
+        }
+
+        It 'Should send RFC5424 formatted message with correct date format (1 to 9)' {
+            Mock -ModuleName Posh-SYSLOG Get-Date { return (New-Object datetime(2000,1,1)) }
+
+            $ExpectedResult = '<33>Jan  1 00:00:00 TestHostname Posh-SYSLOG.Tests.ps1 Test Syslog Message'
             $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -RFC3164
             $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
         }
@@ -507,7 +517,7 @@ Describe 'Send-SyslogMessage' {
             $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
         }
         It 'truncates RFC 3164 messages to 1k' {
-            $ExpectedResult = ('<33>Jan 01 00:00:00 TestHostname Posh-SYSLOG.Tests.ps1 {1}' -f $ExpectedTimeStamp, $LongMsg).Substring(0,1024)
+            $ExpectedResult = ('<33>Jan  1 00:00:00 TestHostname Posh-SYSLOG.Tests.ps1 {1}' -f $ExpectedTimeStamp, $LongMsg).Substring(0,1024)
             $null = Send-SyslogMessage -Server '127.0.0.1' -Message $LongMsg -Severity 'Alert' -Facility 'auth' -RFC3164
             $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
         }
@@ -526,7 +536,7 @@ Describe 'Send-SyslogMessage' {
             $Encoding.GetString($Global:TestResult) | should be $FramedResult
         }
         It 'truncates RFC 3164 messages to 1k' {
-            $ExpectedResult = ('<33>Jan 01 00:00:00 TestHostname Posh-SYSLOG.Tests.ps1 {1}' -f $ExpectedTimeStamp, $LongMsg).Substring(0,1024)
+            $ExpectedResult = ('<33>Jan  1 00:00:00 TestHostname Posh-SYSLOG.Tests.ps1 {1}' -f $ExpectedTimeStamp, $LongMsg).Substring(0,1024)
             $FramedResult = '1024 {0}' -f $ExpectedResult
 
             $null = Send-SyslogMessage -Server '127.0.0.1' -Message $LongMsg -Severity 'Alert' -Facility 'auth' -RFC3164 -Transport TCP
