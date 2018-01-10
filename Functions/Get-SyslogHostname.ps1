@@ -54,7 +54,7 @@
         $LocalEndPoint = $Socket.LocalEndpoint.Address.IPAddressToString
 
         # Get the adapter that the endpoint is assigned to
-        $NetworkAdapter = Get-NetIPAddress -IPAddress $LocalEndPoint
+        $NetworkAdapter = Get-NetworkAdapter -IPAddress $LocalEndPoint
 
         # Is that local endpoint a statically assigned ip address?
         if ($NetworkAdapter.PrefixOrigin -eq 'Manual')

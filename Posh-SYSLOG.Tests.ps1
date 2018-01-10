@@ -18,6 +18,10 @@ Describe 'Send-SyslogMessage' {
     $TCPListener = New-Object System.Net.Sockets.TcpListener $TCPEndpoint
     $TCPListener.start()
 
+    Context 'Get-NetworkAdapter = Tests' {
+        
+    }
+
     Context 'Get-SyslogHostname = UDP Client Tests' {
         $UDPCLient = New-Object -TypeName System.Net.Sockets.UdpClient
         $UDPCLient.Connect('127.0.0.1', '514')
@@ -30,13 +34,13 @@ Describe 'Send-SyslogMessage' {
         }
 
         It 'Uses a Static IP address, on the correct interface that the server is reached on, if no FQDN and not hostname specified' {
-            Mock -ModuleName Posh-SYSLOG Get-NetIPAddress {return @{PrefixOrigin = 'Manual'}}
+            Mock -ModuleName Posh-SYSLOG Get-NetworkAdapter {return @{PrefixOrigin = 'Manual'}}
             $TestResult = Get-SyslogHostname -Socket $UDPCLient.Client
             $TestResult | Should Be '127.0.0.1'
         }
 
         It 'Uses the Windows computer name, if no static ip or FQDN' {
-            Mock -ModuleName Posh-SYSLOG Get-NetIPAddress {return $null} 
+            Mock -ModuleName Posh-SYSLOG Get-NetworkAdapter {return $null} 
             $TestResult = Get-SyslogHostname -Socket $UDPCLient.Client
             $TestResult | Should Be 'TestHostname'
         }
@@ -54,13 +58,13 @@ Describe 'Send-SyslogMessage' {
         }
 
         It 'Uses a Static IP address, on the correct interface that the server is reached on, if no FQDN and not hostname specified' {
-            Mock -ModuleName Posh-SYSLOG Get-NetIPAddress {return @{PrefixOrigin = 'Manual'}}
+            Mock -ModuleName Posh-SYSLOG Get-NetworkAdapter {return @{PrefixOrigin = 'Manual'}}
             $TestResult = Get-SyslogHostname -Socket $TCPCLient.Client
             $TestResult | Should Be '127.0.0.1'
         }
 
         It 'Uses the Windows computer name, if no static ip or FQDN' {
-            Mock -ModuleName Posh-SYSLOG Get-NetIPAddress {return $null} 
+            Mock -ModuleName Posh-SYSLOG Get-NetworkAdapter {return $null} 
             $TestResult = Get-SyslogHostname -Socket $TCPCLient.Client
             $TestResult | Should Be 'TestHostname'
         }
@@ -438,7 +442,7 @@ Describe 'Send-SyslogMessage' {
         }
 
         It 'Uses a Static IP address, on the correct interface that the server is reached on, if no FQDN and not hostname specified' {
-            Mock -ModuleName Posh-SYSLOG Get-NetIPAddress {return @{PrefixOrigin = 'Manual'}}
+            Mock -ModuleName Posh-SYSLOG Get-NetworkAdapter {return @{PrefixOrigin = 'Manual'}}
 
             $ExpectedResult = '<33>1 {0} 127.0.0.1 Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
             $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'
@@ -446,7 +450,7 @@ Describe 'Send-SyslogMessage' {
         }
 
         It 'Uses the Windows computer name, if no static ip or FQDN' {
-            Mock -ModuleName Posh-SYSLOG Get-NetIPAddress {return $null}
+            Mock -ModuleName Posh-SYSLOG Get-NetworkAdapter {return $null}
 
             $ExpectedResult = '<33>1 {0} TestHostname Posh-SYSLOG.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
             $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'
