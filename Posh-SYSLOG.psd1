@@ -12,7 +12,7 @@
 RootModule = 'Posh-SYSLOG.psm1'
 
 # Version number of this module.
-ModuleVersion = '3.2.0'
+ModuleVersion = '3.2.1'
 
 # ID used to uniquely identify this module
 GUID = '6c03881f-48f0-4a55-914d-a6ee33d019e7'
@@ -104,7 +104,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'Removed dependency on NetTCPIP allowing for execution on PowerShell Core'
+        ReleaseNotes = 'Resolves issues with RFC3164 timstamp as reported by benclaussen'
     } # End of PSData hashtable
 
 } # End of PrivateData hashtable
