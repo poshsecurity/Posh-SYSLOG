@@ -30,13 +30,13 @@ Copyright = '(c) 2017 Kieran Jacobsen. All rights reserved.'
 Description = 'Send SYSLOG messages from PowerShell'
 
 # Minimum version of the Windows PowerShell engine required by this module
-# PowerShellVersion = ''
+PowerShellVersion = '3.0'
 
 # Name of the Windows PowerShell host required by this module
 # PowerShellHostName = ''
 
 # Minimum version of the Windows PowerShell host required by this module
-PowerShellHostVersion = '3.0'
+# PowerShellHostVersion = ''
 
 # Minimum version of Microsoft .NET Framework required by this module
 # DotNetFrameworkVersion = ''
