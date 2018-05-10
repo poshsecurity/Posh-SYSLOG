@@ -12,7 +12,7 @@
 RootModule = 'Posh-SYSLOG.psm1'
 
 # Version number of this module.
-ModuleVersion = '3.2.1'
+ModuleVersion = '3.3'
 
 # ID used to uniquely identify this module
 GUID = '6c03881f-48f0-4a55-914d-a6ee33d019e7'
@@ -104,7 +104,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'Resolves issues with RFC3164 timstamp as reported by benclaussen'
+        ReleaseNotes = 'Resolves issues with PowerShellHostVersion in manifest as reported by powershellshock'
     } # End of PSData hashtable
 
 } # End of PrivateData hashtable
