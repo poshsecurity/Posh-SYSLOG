@@ -1,18 +1,19 @@
-﻿#
-# Export the module members - KUDOS to the chocolatey project for this efficent code
-# 
+﻿# Taken from http://overpoweredshell.com/Working-with-Plaster/
 
-
-#get the path of where the module is saved (if module is at c:\myscripts\module.psm1, then c:\myscripts\)
-$mypath = (Split-Path -Parent -Path $MyInvocation.MyCommand.Definition)
-
-#find all the ps1 files in the subfolder functions
-Resolve-Path -Path $mypath\functions\*.ps1 | ForEach-Object -Process {
-    . $_.ProviderPath
-    $Function = ((Split-Path -Path $_.ProviderPath -Leaf).Split('.')[0])
-    Export-ModuleMember -Function $Function
+$functionFolders = @('public', 'private', 'classes')
+ForEach ($folder in $functionFolders)
+{
+    $folderPath = Join-Path -Path $PSScriptRoot -ChildPath $folder
+    If (Test-Path -Path $folderPath)
+    {
+        Write-Verbose -Message "Importing from $folder"
+        $functions = Get-ChildItem -Path $folderPath -Filter '*.ps1'
+        ForEach ($function in $functions)
+        {
+            Write-Verbose -Message "  Importing $($function.BaseName)"
+            . $function.providerpath
+        }
+    }
 }
-
-#
-# Define any alias and export them - Kieran Jacobsen
-#
+$publicFunctions = (Get-ChildItem -Path "$PSScriptRoot\functions" -Filter '*.ps1').BaseName
+Export-ModuleMember -Function $publicFunctions
