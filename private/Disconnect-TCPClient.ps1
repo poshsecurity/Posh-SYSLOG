@@ -18,7 +18,6 @@
     #>
     
     [CmdletBinding()]
-    [OutputType($null)]
     param
     (
         # TCP Client that is connected to an endpoint

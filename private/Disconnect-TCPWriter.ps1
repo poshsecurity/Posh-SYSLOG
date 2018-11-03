@@ -18,7 +18,6 @@
     #>
     
     [CmdletBinding()]
-    [OutputType($null)]
     param
     (
         # TcpWriter object

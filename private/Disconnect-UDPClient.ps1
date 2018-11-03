@@ -18,7 +18,6 @@
     #>
 
     [CmdletBinding()]
-    [OutputType($null)]
     param
     (
         # UdpClient that is connected to an endpoint
