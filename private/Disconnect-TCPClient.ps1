@@ -6,7 +6,7 @@
 
             .DESCRIPTION
             Internal function.
-        
+
             Disconnects/closes an open TCPClient.
 
             .EXAMPLE
@@ -16,7 +16,7 @@
             .OUTPUTS
             None
     #>
-    
+
     [CmdletBinding()]
     param
     (
@@ -28,11 +28,12 @@
         $TcpClient
     )
 
-    Try 
+    Try
     {
         $TcpClient.Close()
+        Write-Debug -message ('Connection Closed')
     }
-    Catch 
+    Catch
     {
         Throw $_
     }
