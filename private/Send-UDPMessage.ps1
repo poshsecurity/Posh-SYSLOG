@@ -24,7 +24,7 @@
         [Parameter(Mandatory   = $true,
                    HelpMessage = 'UDPClient object, that is already connected to the TCP server')]
         [ValidateNotNullOrEmpty()]
-        [Net.Sockets.UdpClient]
+        [System.Net.Sockets.UdpClient]
         $UdpClient,
 
         # Byte array containing the datagram to be sent.
@@ -34,7 +34,7 @@
         [byte[]]
         $Datagram
     )
-    
+
     Write-Verbose -Message ([Text.Encoding]::ASCII.GetString($Datagram))
 
     $null = $UdpClient.Send($Datagram, $Datagram.Length)
