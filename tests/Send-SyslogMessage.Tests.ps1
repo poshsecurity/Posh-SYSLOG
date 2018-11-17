@@ -221,11 +221,11 @@ InModuleScope $script:ModuleName {
             }
 
             It 'Should not accept a null value for Transport' {
-                {Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Transport $null} | Should Throw 'Cannot validate argument on parameter'
+                {Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Transport $null} | Should Throw
             }
 
             It 'Should not accept an invalid value for Transport' {
-                {Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Transport 'bob'} | Should Throw 'Cannot validate argument on parameter'
+                {Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Transport 'bob'} | Should Throw
             }
 
             It 'Should reject ProcessID parameter if -RFC3164 is specified' {
