@@ -91,60 +91,60 @@ Function Send-SyslogMessage
     Param
     (
         #Destination SYSLOG server that message is to be sent to.
-        [Parameter(Mandatory = $true,
+        [Parameter(Mandatory                        = $true,
                    ValueFromPipelineByPropertyName  = $false,
-                   HelpMessage = 'Server to send message to')]
+                   HelpMessage                      = 'Server to send message to')]
         [ValidateNotNullOrEmpty()]
         [String]
         $Server,
 
         #Our message or content that we want to send to the server. This is option in RFC 5424, the CMDLet still has this as a madatory parameter, to send no message, simply specifiy '-' (as per RFC).
-        [Parameter(Mandatory = $true,
+        [Parameter(Mandatory                        = $true,
                    ValueFromPipelineByPropertyName  = $true,
-                   HelpMessage = 'Message to send')]
+                   HelpMessage                      = 'Message to send')]
         [ValidateNotNullOrEmpty()]
         [String]
         $Message,
 
         #Severity level as defined in SYSLOG specification, must be of ENUM type Syslog_Severity
-        [Parameter(Mandatory = $true,
+        [Parameter(Mandatory                        = $true,
                    ValueFromPipelineByPropertyName  = $true,
-                   HelpMessage = 'Messsage severity level')]
+                   HelpMessage                      = 'Messsage severity level')]
         [ValidateNotNullOrEmpty()]
         [Syslog_Severity]
         $Severity,
 
         #Facility of message as defined in SYSLOG specification, must be of ENUM type Syslog_Facility
-        [Parameter(Mandatory = $true,
+        [Parameter(Mandatory                        = $true,
                    ValueFromPipelineByPropertyName  = $true,
-                   HelpMessage = 'Facility sending message')]
+                   HelpMessage                      = 'Facility sending message')]
         [ValidateNotNullOrEmpty()]
         [Syslog_Facility]
         $Facility,
 
         #Hostname of machine the message is about, if not specified, RFC 5425 selection rules will be followed.
-        [Parameter(Mandatory = $false,
+        [Parameter(Mandatory                        = $false,
                    ValueFromPipelineByPropertyName  = $false)]
         [ValidateNotNullOrEmpty()]
         [String]
         $Hostname,
 
         #Specify the name of the application or script that is sending the mesage. If not specified, will select the ScriptName, or if empty, powershell.exe will be sent. To send Null, specify '-' to meet RFC 5424.
-        [Parameter(Mandatory = $false,
+        [Parameter(Mandatory                        = $false,
                    ValueFromPipelineByPropertyName  = $true)]
         [ValidateNotNullOrEmpty()]
         [String]
         $ApplicationName,
 
         #Time and date of the message, must be of type DateTime. Correct format will be selected depending on RFC requested. If not specified, will call get-date to get appropriate date time.
-        [Parameter(Mandatory = $false,
+        [Parameter(Mandatory                        = $false,
                    ValueFromPipelineByPropertyName  = $true)]
         [ValidateNotNullOrEmpty()]
         [DateTime]
         $Timestamp = (Get-Date),
 
         #SYSLOG UDP (or TCP) port to which to send the message. Defaults to 514, if not specified.
-        [Parameter(Mandatory = $false,
+        [Parameter(Mandatory                        = $false,
                    ValueFromPipelineByPropertyName  = $true)]
         [ValidateNotNullOrEmpty()]
         [ValidateRange(1, 65535)]
@@ -153,7 +153,7 @@ Function Send-SyslogMessage
         $Port = 514,
 
         # Transport protocol (TCP or UDP or TCP with TLS) over which the message will be sent. Default is UDP.
-        [Parameter(Mandatory = $false,
+        [Parameter(Mandatory                        = $false,
                    ValueFromPipelineByPropertyName  = $true)]
         [ValidateNotNullOrEmpty()]
         #[ValidateSet('UDP','TCP', 'TCPwithTLS')]
@@ -162,31 +162,31 @@ Function Send-SyslogMessage
         $Transport = 'UDP',
 
         #ProcessID or PID of generator of message. Will automatically use $PID global variable. If you want to override this and send null, specify '-' to meet RFC 5424 rquirements.
-        [Parameter(Mandatory = $false,
+        [Parameter(Mandatory                        = $false,
                    ValueFromPipelineByPropertyName  = $true,
-                   ParameterSetName = 'RFC5424')]
+                   ParameterSetName                 = 'RFC5424')]
         [ValidateNotNullOrEmpty()]
         [String]
         $ProcessID = $PID,
 
         #Error message or troubleshooting number associated with the message being sent. If you want to override this and send null, specify '-' to meet RFC 5424 rquirements.
-        [Parameter(Mandatory = $false,
+        [Parameter(Mandatory                        = $false,
                    ValueFromPipelineByPropertyName  = $true,
-                   ParameterSetName = 'RFC5424')]
+                   ParameterSetName                 = 'RFC5424')]
         [ValidateNotNullOrEmpty()]
         [String]
         $MessageID = '-',
 
         #Key Pairs of structured data as a string as defined in RFC5424. Default will be '-' which means null.
-        [Parameter(Mandatory = $false,
+        [Parameter(Mandatory                        = $false,
                    ValueFromPipelineByPropertyName  = $true,
-                   ParameterSetName = 'RFC5424')]
+                   ParameterSetName                 = 'RFC5424')]
         [ValidateNotNullOrEmpty()]
         [String]
         $StructuredData = '-',
 
         # Framing method used for the message, default is 'Octet-Counting' (see RFC6587 section 3.4). This only applies when TCP is used for transport (no effect on UDP messages).
-        [Parameter(Mandatory = $false,
+        [Parameter(Mandatory                        = $false,
                    ValueFromPipelineByPropertyName  = $true)]
         [ValidateNotNullOrEmpty()]
         [ValidateSet('Octet-Counting','Non-Transparent-Framing','None')]
@@ -194,22 +194,22 @@ Function Send-SyslogMessage
         $FramingMethod = 'Octet-Counting',
 
         # SSL/TLS Protocols to be used when connecting to server. Default is TLS1.2.
-        [Parameter(Mandatory = $false,
+        [Parameter(Mandatory                        = $false,
                    ValueFromPipelineByPropertyName  = $true)]
         [ValidateNotNullOrEmpty()]
         [System.Security.Authentication.SslProtocols]
         $SslProtocols = [System.Security.Authentication.SslProtocols]::Tls12,
 
         # Do not validate the SSL/TLS certificate presented by the server.
-        [Parameter(Mandatory = $false,
+        [Parameter(Mandatory                        = $false,
                    ValueFromPipelineByPropertyName  = $true)]
         [switch]
         $DoNotValidateTLSCertificate,
 
         #Send an RFC3164 fomatted message instead of RFC5424.
-        [Parameter(Mandatory = $true,
+        [Parameter(Mandatory                        = $true,
                    ValueFromPipelineByPropertyName  = $true,
-                   ParameterSetName = 'RFC3164')]
+                   ParameterSetName                 = 'RFC3164')]
         [switch]
         $RFC3164
     )
