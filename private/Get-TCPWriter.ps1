@@ -27,7 +27,7 @@
         $TcpClient,
 
         # Enables support for TLS
-        [Parameter(Mandatory        = $false,
+        [Parameter(Mandatory        = $true,
                    ParameterSetName = 'UseTLS')]
         [switch]
         $UseTLS,
