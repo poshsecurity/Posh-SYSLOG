@@ -21,26 +21,42 @@ Import-Module $ModuleBase\$ModuleName.psd1 -PassThru -ErrorAction Stop | Out-Nul
 # in the module even if they're not exported.
 InModuleScope $script:ModuleName {
     Describe "Basic function unit tests" -Tags Build , Unit{
-        Mock -ModuleName Posh-SYSLOG Get-Date { return (New-Object datetime(2000,1,1)) }
-
-        Mock -ModuleName Posh-SYSLOG Get-CimInstance { return @{partofdomain = $false; DNSHostname = 'TestHostname'} }
-
-        Mock -ModuleName Posh-SYSLOG Connect-TCPClient {
+        Mock -ModuleName Posh-SYSLOG -CommandName Get-Date -MockWith {
+            return (New-Object datetime(2000,1,1))
+        }
+        Mock -ModuleName Posh-SYSLOG -CommandName Get-CimInstance -MockWith {
+            return @{partofdomain = $false; DNSHostname = 'TestHostname'}
+        }
+        Mock -ModuleName Posh-SYSLOG -CommandName Connect-TCPClient -MockWith {
             return @{Client = New-Object -TypeName System.Net.Sockets.Socket -ArgumentList @([System.Net.Sockets.SocketType]::Stream, [System.Net.Sockets.ProtocolType]::Tcp)}
         }
-        Mock -ModuleName Posh-SYSLOG Connect-UDPClient {
+        Mock -ModuleName Posh-SYSLOG -CommandName Connect-UDPClient -MockWith {
             return @{Client = New-Object -TypeName System.Net.Sockets.Socket -ArgumentList @([System.Net.Sockets.SocketType]::Dgram, [System.Net.Sockets.ProtocolType]::Udp)}
         }
-        Mock -ModuleName Posh-SYSLOG Disconnect-TCPClient { }
-        Mock -ModuleName Posh-SYSLOG Disconnect-UDPClient { }
-        Mock -ModuleName Posh-SYSLOG Disconnect-TCPWriter { }
-        Mock -ModuleName Posh-SYSLOG Get-TCPWriter {
+        Mock -ModuleName Posh-SYSLOG -CommandName Disconnect-TCPClient -MockWith {
+            # Nothing
+        }
+        Mock -ModuleName Posh-SYSLOG -CommandName Disconnect-UDPClient -MockWith {
+            # Nothing
+        }
+        Mock -ModuleName Posh-SYSLOG -CommandName Disconnect-TCPWriter -MockWith {
+            # Nothing
+        }
+        Mock -ModuleName Posh-SYSLOG -CommandName Get-TCPWriter -MockWith {
             return (New-Object -TypeName System.IO.StreamWriter -ArgumentList  @([System.IO.Stream]::Null))
         }
-        Mock -ModuleName Posh-SYSLOG Get-NetworkAdapter { return $null }
-        Mock -ModuleName Posh-SYSLOG Get-SyslogHostname { return 'TestHostname' }
-        Mock -CommandName Send-TCPMessage -ModuleName Posh-SYSLOG { $Global:TestResult = $Datagram; return $null }
-        Mock -CommandName Send-UDPMessage -ModuleName Posh-SYSLOG { $Global:TestResult = $Datagram; return $null }
+        Mock -ModuleName Posh-SYSLOG -CommandName Get-NetworkAdapter -MockWith {
+            return $null
+        }
+        Mock -ModuleName Posh-SYSLOG -CommandName Get-SyslogHostname -MockWith {
+            return 'TestHostname'
+        }
+        Mock -ModuleName Posh-SYSLOG -CommandName Send-TCPMessage -MockWith {
+            $Global:TestResult = $Datagram; return $null
+        }
+        Mock -ModuleName Posh-SYSLOG -CommandName Send-UDPMessage -MockWith {
+            $Global:TestResult = $Datagram; return $null
+        }
 
         $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
 
