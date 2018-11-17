@@ -14,6 +14,14 @@ if ((Split-Path $ModuleBase -Leaf) -eq 'Tests') {
 $Env:ModuleBase = $ModuleBase
 
 Import-Module $ModuleBase\$ModuleName.psd1 -PassThru -ErrorAction Stop | Out-Null
-Describe "Basic function feature tests" -Tags Build {
+
+# InModuleScope runs the test in module scope.
+# It creates all variables and functions in module scope.
+# As a result, test has access to all functions, variables and aliases
+# in the module even if they're not exported.
+InModuleScope $script:ModuleName {
+    Describe "Basic function unit tests" -Tags Build , Unit{
+
+    }
 
 }
