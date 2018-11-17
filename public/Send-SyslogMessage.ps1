@@ -343,13 +343,13 @@ Function Send-SyslogMessage
         # Set the APP-NAME
         if (-not $PSBoundParameters.ContainsKey('ApplicationName'))
         {
-            Write-Verbose -Message ('No APP-NAME value was provided by caller, using previously detected value: {0}'-f $ApplicationName)
             $ApplicationName = $Caller
+            Write-Verbose -Message ('No APP-NAME value was provided by caller, using previously detected value: {0}'-f $ApplicationName)
         }
 
-        Switch ($PSCmdlet.ParameterSetName)
+        Switch -Wildcard ($PSCmdlet.ParameterSetName)
         {
-            'RFC3164'
+            'RFC3164*'
             {
                 Write-Verbose -Message 'Using RFC 3164 message format. Maxmimum length of 1024 bytes (section 4.1)'
 
@@ -380,7 +380,7 @@ Function Send-SyslogMessage
                 $MaxLength = 1024
             }
 
-            'RFC5424'
+            'RFC5424*'
             {
                 Write-Verbose -Message 'Using RFC 5424 message format. Maxmimum length of 2048 bytes.'
 
