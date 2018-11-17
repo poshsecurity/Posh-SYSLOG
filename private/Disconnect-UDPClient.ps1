@@ -6,7 +6,7 @@
 
         .DESCRIPTION
         Internal function.
-        
+
         Disconnects/closes an open UdpClient.
 
         .EXAMPLE
@@ -28,11 +28,12 @@
         $UdpClient
     )
 
-    Try 
+    Try
     {
         $UdpClient.Close()
+        Write-Debug -message ('Connection Closed')
     }
-    Catch 
+    Catch
     {
         Throw $_
     }
