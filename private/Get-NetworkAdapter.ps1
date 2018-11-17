@@ -3,7 +3,7 @@
     <#
         .SYNOPSIS
         Gets the correstponding network adapter for the specified local IP address.
-        
+
         .DESCRIPTION
         Internal Function.
 
@@ -30,10 +30,15 @@
 
     # Get a list of network adapters on the system
     $LocalAdapters = [System.Net.NetworkInformation.NetworkInterface]::GetAllNetworkInterfaces()
+    Write-Debug -Message ('Found {0} network interfaces' -f ($LocalAdapters.Count))
 
     # Get the adapter that the endpoint is assigned to
-    #$NetworkAdapter = Get-NetIPAddress -IPAddress $LocalEndPoint
     $NetworkAdapter = $LocalAdapters.ForEach({$_.GetIPProperties().UnicastAddresses}).where({$_.address -eq $IPAddress})
+
+    if ($NetworkAdapter.Count -ne 1)
+    {
+        Throw 'Unable to find correct network adapter'
+    }
 
     $NetworkAdapter
 }
