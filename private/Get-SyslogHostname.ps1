@@ -34,7 +34,7 @@
         [Parameter(Mandatory   = $true,
                    HelpMessage = 'Add help message for user')]
         [ValidateNotNullOrEmpty()]
-        [Net.Sockets.Socket]
+        [System.Net.Sockets.Socket]
         $Socket
     )
 
@@ -45,7 +45,7 @@
     {
         # Use HOSTNAME Option 1 (FQDN), per RFC 5424 (section 6.2.4)
         $Hostname = '{0}.{1}' -f $Win32_ComputerSystem.DNSHostname, $Win32_ComputerSystem.Domain
-        
+
         Write-Verbose -Message ('The machine is joined to an Active Directory domain, hostname value will be FQDN: {0}' -f $Hostname)
     }
     else
