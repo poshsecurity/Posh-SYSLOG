@@ -87,7 +87,7 @@ Function Send-SyslogMessage
 
     #>
 
-    [CMDLetBinding(DefaultParameterSetName = 'RFC5424-UDP')]
+    [CMDLetBinding(DefaultParameterSetName = 'RFC5424')]
     Param
     (
         #Destination SYSLOG server that message is to be sent to.
@@ -138,14 +138,14 @@ Function Send-SyslogMessage
 
         #Time and date of the message, must be of type DateTime. Correct format will be selected depending on RFC requested. If not specified, will call get-date to get appropriate date time.
         [Parameter(Mandatory = $false,
-                ValueFromPipelineByPropertyName  = $true)]
+                   ValueFromPipelineByPropertyName  = $true)]
         [ValidateNotNullOrEmpty()]
         [DateTime]
         $Timestamp = (Get-Date),
 
         #SYSLOG UDP (or TCP) port to which to send the message. Defaults to 514, if not specified.
         [Parameter(Mandatory = $false,
-                   ValueFromPipelineByPropertyName  = $false)]
+                   ValueFromPipelineByPropertyName  = $true)]
         [ValidateNotNullOrEmpty()]
         [ValidateRange(1, 65535)]
         [Alias('UDPPort','TCPPort')]
@@ -154,7 +154,7 @@ Function Send-SyslogMessage
 
         # Transport protocol (TCP or UDP or TCP with TLS) over which the message will be sent. Default is UDP.
         [Parameter(Mandatory = $false,
-                   ValueFromPipelineByPropertyName  = $false)]
+                   ValueFromPipelineByPropertyName  = $true)]
         [ValidateNotNullOrEmpty()]
         #[ValidateSet('UDP','TCP', 'TCPwithTLS')]
         #[String]
@@ -164,13 +164,7 @@ Function Send-SyslogMessage
         #ProcessID or PID of generator of message. Will automatically use $PID global variable. If you want to override this and send null, specify '-' to meet RFC 5424 rquirements.
         [Parameter(Mandatory = $false,
                    ValueFromPipelineByPropertyName  = $true,
-                   ParameterSetName = 'RFC5424-UDP')]
-        [Parameter(Mandatory = $false,
-                   ValueFromPipelineByPropertyName  = $true,
-                   ParameterSetName = 'RFC5424-TCP')]
-        [Parameter(Mandatory = $false,
-                   ValueFromPipelineByPropertyName  = $true,
-                   ParameterSetName = 'RFC5424-TLS')]
+                   ParameterSetName = 'RFC5424')]
         [ValidateNotNullOrEmpty()]
         [String]
         $ProcessID = $PID,
@@ -178,13 +172,7 @@ Function Send-SyslogMessage
         #Error message or troubleshooting number associated with the message being sent. If you want to override this and send null, specify '-' to meet RFC 5424 rquirements.
         [Parameter(Mandatory = $false,
                    ValueFromPipelineByPropertyName  = $true,
-                   ParameterSetName = 'RFC5424-UDP')]
-        [Parameter(Mandatory = $false,
-                   ValueFromPipelineByPropertyName  = $true,
-                   ParameterSetName = 'RFC5424-TCP')]
-        [Parameter(Mandatory = $false,
-                   ValueFromPipelineByPropertyName  = $true,
-                   ParameterSetName = 'RFC5424-TLS')]
+                   ParameterSetName = 'RFC5424')]
         [ValidateNotNullOrEmpty()]
         [String]
         $MessageID = '-',
@@ -192,30 +180,14 @@ Function Send-SyslogMessage
         #Key Pairs of structured data as a string as defined in RFC5424. Default will be '-' which means null.
         [Parameter(Mandatory = $false,
                    ValueFromPipelineByPropertyName  = $true,
-                   ParameterSetName = 'RFC5424-UDP')]
-        [Parameter(Mandatory = $false,
-                   ValueFromPipelineByPropertyName  = $true,
-                   ParameterSetName = 'RFC5424-TCP')]
-        [Parameter(Mandatory = $false,
-                   ValueFromPipelineByPropertyName  = $true,
-                   ParameterSetName = 'RFC5424-TLS')]
+                   ParameterSetName = 'RFC5424')]
         [ValidateNotNullOrEmpty()]
         [String]
         $StructuredData = '-',
 
         # Framing method used for the message, default is 'Octet-Counting' (see RFC6587 section 3.4). This only applies when TCP is used for transport (no effect on UDP messages).
         [Parameter(Mandatory = $false,
-                   ValueFromPipelineByPropertyName  = $true,
-                   ParameterSetName = 'RFC5424-TCP')]
-        [Parameter(Mandatory = $false,
-                   ValueFromPipelineByPropertyName  = $true,
-                   ParameterSetName = 'RFC5424-TLS')]
-        [Parameter(Mandatory = $false,
-                   ValueFromPipelineByPropertyName  = $true,
-                   ParameterSetName = 'RFC3164-TCP')]
-        [Parameter(Mandatory = $false,
-                   ValueFromPipelineByPropertyName  = $true,
-                   ParameterSetName = 'RFC3164-TLS')]
+                   ValueFromPipelineByPropertyName  = $true)]
         [ValidateNotNullOrEmpty()]
         [ValidateSet('Octet-Counting','Non-Transparent-Framing','None')]
         [String]
@@ -223,35 +195,21 @@ Function Send-SyslogMessage
 
         # SSL/TLS Protocols to be used when connecting to server. Default is TLS1.2.
         [Parameter(Mandatory = $false,
-                   ValueFromPipelineByPropertyName  = $true,
-                   ParameterSetName = 'RFC5424-TLS')]
-        [Parameter(Mandatory = $false,
-                   ValueFromPipelineByPropertyName  = $true,
-                   ParameterSetName = 'RFC3164-TLS')]
+                   ValueFromPipelineByPropertyName  = $true)]
         [ValidateNotNullOrEmpty()]
         [System.Security.Authentication.SslProtocols]
         $SslProtocols = [System.Security.Authentication.SslProtocols]::Tls12,
 
         # Do not validate the SSL/TLS certificate presented by the server.
         [Parameter(Mandatory = $false,
-                   ValueFromPipelineByPropertyName  = $true,
-                   ParameterSetName = 'RFC5424-TLS')]
-        [Parameter(Mandatory = $false,
-                   ValueFromPipelineByPropertyName  = $true,
-                   ParameterSetName = 'RFC3164-TLS')]
+                   ValueFromPipelineByPropertyName  = $true)]
         [switch]
         $DoNotValidateTLSCertificate,
 
         #Send an RFC3164 fomatted message instead of RFC5424.
         [Parameter(Mandatory = $true,
                    ValueFromPipelineByPropertyName  = $true,
-                   ParameterSetName = 'RFC3164-UDP')]
-        [Parameter(Mandatory = $true,
-                   ValueFromPipelineByPropertyName  = $true,
-                   ParameterSetName = 'RFC3164-TCP')]
-        [Parameter(Mandatory = $true,
-                   ValueFromPipelineByPropertyName  = $true,
-                   ParameterSetName = 'RFC3164-TLS')]
+                   ParameterSetName = 'RFC3164')]
         [switch]
         $RFC3164
     )
@@ -357,9 +315,9 @@ Function Send-SyslogMessage
             Write-Verbose -Message ('No APP-NAME value was provided by caller, using previously detected value: {0}'-f $ApplicationName)
         }
 
-        Switch -Wildcard ($PSCmdlet.ParameterSetName)
+        Switch ($PSCmdlet.ParameterSetName)
         {
-            'RFC3164*'
+            'RFC3164'
             {
                 Write-Verbose -Message 'Using RFC 3164 message format. Maxmimum length of 1024 bytes (section 4.1)'
 
@@ -390,7 +348,7 @@ Function Send-SyslogMessage
                 $MaxLength = 1024
             }
 
-            'RFC5424*'
+            'RFC5424'
             {
                 Write-Verbose -Message 'Using RFC 5424 message format. Maxmimum length of 2048 bytes.'
 
