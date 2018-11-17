@@ -80,6 +80,7 @@ Here are some tips on ensuring you create an excellent suggestion:
 Looking to make your first contribution? Congratulations, you are taking the first steps into an amazing journey.
 
 Don't know where to start? You can start by looking through the issues for the **Beginner** and **Help Wanted** tags:
+
 * **Beginner** are simple and should only take a few lines of code and tests to complete.
 * **Help Wanted** are more involved and will take more effort to complete.
 
@@ -90,21 +91,22 @@ Pull requests are always more than welcome. When creating a pull request, ensure
 Here are a few guidelines that should be followed:
 
 * Each pull request should accomplish a clear goal. Ensure that you clearly state in the request what it accomplishes.
-    * Bug fixes: What was the bug? How did you fix it?
-    * New features: What is it? How is it used?
+  * Bug fixes: What was the bug? How did you fix it?
+  * New features: What is it? How is it used?
 * Provide a high level explanation of what you are changing, it makes it easier to review.
 * Keep requests small, as it:
-    * Makes reviews easier.
-    * Makes testing easier.
-    * Helps review conflicts more easily.
+  * Makes reviews easier.
+  * Makes testing easier.
+  * Helps review conflicts more easily.
 * Ensure that all Pester tests pass and there are no failures.
 * Ensure that there are no errors or warnings with PowerShell Script Analyzer
 * Any new code needs to have tests created:
-    * Bug fixes: Consider test cases that would have failed before the change but pass now.
+  * Bug fixes: Consider test cases that would have failed before the change but pass now.
     * New features: Test cases need to ensure that new features function correctly and existing features still function as previously expected.
 * Ensure that any code you write aligns with community style guides.
 * Don't include issue numbers in the PR title.
 * Ensure that your branch is up-to-date to reduce the merge conflicts that could occur.
+
 ### Things that might get your Pull Request rejected
 
 There are often things in Pull Requests that might lead to a pull request being rejected, these include:
