@@ -6,7 +6,7 @@
 
         .DESCRIPTION
         Internal function.
-        
+
         Disconnects/closes an open TCPWriter.
 
         .EXAMPLE
@@ -16,7 +16,7 @@
         .OUTPUTS
         None
     #>
-    
+
     [CmdletBinding()]
     param
     (
@@ -28,23 +28,25 @@
         $TcpWriter
     )
 
-    Try 
+    Try
     {
         $TcpStream = $TcpWriter.BaseStream
-                
-        If ($TcpWriter)
+
+        If ($null -ne $TcpWriter)
         {
             Write-Verbose -Message 'Cleaning up the TCP writer object'
             $TcpWriter.Close()
+            Write-Debug -message ('Writer Closed')
         }
 
-        If ($TcpStream)
+        If ($null -ne $TcpStream)
         {
             Write-Verbose -Message 'Cleaning up the TCP stream object'
             $TcpStream.Dispose()
+            Write-Debug -message ('Stream Closed')
         }
     }
-    Catch 
+    Catch
     {
         Throw $_
     }
