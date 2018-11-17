@@ -1,5 +1,7 @@
 # Posh-SYSLOG
 
+![Build Status](https://build.status.url.here)
+
 ## Description
 
 A module for sending SYSLOG messages from PowerShell.
@@ -36,7 +38,7 @@ Once installed from the PowerShell Gallery, you can update it using:
 PS> Update-Module -Name Posh-SYSLOG
 ```
 
-### Removing Posh-SYSLOG
+### Uninstalling Posh-SYSLOG
 
 To remove Posh-SYSLOG:
 
@@ -44,6 +46,16 @@ To remove Posh-SYSLOG:
 PS> Uninstall-Module -Name Posh-SYSLOG
 ```
 
+## Contributing to Posh-SYSLOG
+
+Interested in contributing? Read how you can [Contribute](contributing.md) to Posh-SYSLOG
+
+This project maintains a [Code of Conduct](code-of-conduct.md) that establishes how the project is governed and how everyone involved is expected to behave. You can report unacceptable behavior to [Developer@PowerShellis.Cool](mailto:Developer@PowerShellis.Cool).
+
+## Release History
+
+A detailed release history is contained in the [Change Log](CHANGELOG.md).
+
 ## License
 
-Posh-SYSLOG is provided under the [MIT license](LICENSE.MD).
+Posh-SYSLOG is provided under the [MIT license](LICENSE.md).
