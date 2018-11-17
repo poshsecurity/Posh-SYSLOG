@@ -78,7 +78,7 @@ foreach ($command in $commands) {
                 It "help for $commandName has correct parameter type for $parameterName" {
                     $codeType = $parameter.ParameterType.Name
                     # To avoid calling Trim method on a null object.
-                    $helpType = if ($parameterHelp.parameterValue) { $parameterHelp.parameterValue.Trim() }
+                    $helpType = if ($null -ne $parameterHelp.parameterValue) { $parameterHelp.parameterValue.Trim() }
                     $helpType | Should be $codeType
                 }
             }
