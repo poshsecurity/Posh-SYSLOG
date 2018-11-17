@@ -323,8 +323,7 @@ Function Send-SyslogMessage
 
                 #Get the timestamp
                 <#
-                    The TIMESTAMP field is the local time and is in the format of "Mmm dd
-                    hh:mm:ss" (without the quote marks) where:
+                    The TIMESTAMP field is the local time and is in the format of "Mmm dd hh:mm:ss" (without the quote marks) where:
                     ...
                     dd is the day of the month. If the day of the month is less
                     than 10, then it MUST be represented as a space and then the
