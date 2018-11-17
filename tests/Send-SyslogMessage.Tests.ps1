@@ -52,10 +52,10 @@ InModuleScope $script:ModuleName {
             return 'TestHostname'
         }
         Mock -ModuleName Posh-SYSLOG -CommandName Send-TCPMessage -MockWith {
-            $Global:TestResult = $Datagram; return $null
+            $script:TestResult = $Datagram; return $null
         }
         Mock -ModuleName Posh-SYSLOG -CommandName Send-UDPMessage -MockWith {
-            $Global:TestResult = $Datagram; return $null
+            $script:TestResult = $Datagram; return $null
         }
 
         $ExpectedTimeStamp = (New-Object datetime(2000,1,1)).ToString('yyyy-MM-ddTHH:mm:ss.ffffffzzz')
@@ -261,7 +261,7 @@ InModuleScope $script:ModuleName {
         }
 
         Context 'Send-SyslogMessage = Pipeline input' {
-            Mock -CommandName Send-UDPMessage -ModuleName Posh-SYSLOG { $Global:TestResult = $Datagram; return $null }
+            Mock -CommandName Send-UDPMessage -ModuleName Posh-SYSLOG { $script:TestResult = $Datagram; return $null }
 
             It 'Should accept valid input from the pipeline for RFC5424' {
                 $PipelineInput = [PSCustomObject]@{
@@ -276,7 +276,7 @@ InModuleScope $script:ModuleName {
                 }
                 $ExpectedResult = '<0>1 {0} TestHostname RandomAppName 12345678 messageid structuredata Test Syslog Message' -f $ExpectedTimeStamp
                 $null =  $PipelineInput | Send-SyslogMessage -Server 'localhost'
-                $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
+                $Encoding.GetString($script:TestResult) | should be $ExpectedResult
             }
 
             It 'Should accept valid input from the pipeline for RFC3164' {
@@ -290,47 +290,47 @@ InModuleScope $script:ModuleName {
                 }
                 $ExpectedResult = '<0>Jan  1 00:00:00 TestHostname RandomAppName Test Syslog Message'
                 $null =  $PipelineInput | Send-SyslogMessage -Server 'localhost' -RFC3164
-                $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
+                $Encoding.GetString($script:TestResult) | should be $ExpectedResult
             }
         }
 
         Context 'Send-SyslogMessage = Severity Level Calculations' {
-            Mock -CommandName Send-UDPMessage -ModuleName Posh-SYSLOG { $Global:TestResult = $Datagram; return $null }
+            Mock -CommandName Send-UDPMessage -ModuleName Posh-SYSLOG { $script:TestResult = $Datagram; return $null }
 
             It 'Calculates the correct priority of 0 if Facility is Kern and Severity is Emergency' {
                 $ExpectedResult = '<0>1 {0} TestHostname Send-SyslogMessage.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
                 $null =  Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Emergency' -Facility 'kern'
-                $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
+                $Encoding.GetString($script:TestResult) | should be $ExpectedResult
             }
 
             It 'Calculates the correct priority of 7 if Facility is Kern and Severity is Debug' {
                 $ExpectedResult = '<7>1 {0} TestHostname Send-SyslogMessage.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
                 $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Debug' -Facility 'kern'
-                $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
+                $Encoding.GetString($script:TestResult) | should be $ExpectedResult
             }
 
             It 'Calculates the correct priority of 24 if Facility is daemon and Severity is Emergency' {
                 $ExpectedResult = '<24>1 {0} TestHostname Send-SyslogMessage.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
                 $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Emergency' -Facility 'daemon'
-                $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
+                $Encoding.GetString($script:TestResult) | should be $ExpectedResult
             }
 
             It 'Calculates the correct priority of 31 if Facility is daemon and Severity is Debug' {
                 $ExpectedResult = '<31>1 {0} TestHostname Send-SyslogMessage.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
                 $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Debug' -Facility 'daemon'
-                $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
+                $Encoding.GetString($script:TestResult) | should be $ExpectedResult
             }
         }
 
         Context 'Send-SyslogMessage = RFC 3164 Message Format' {
-            Mock -CommandName Send-UDPMessage -ModuleName Posh-SYSLOG { $Global:TestResult = $Datagram; return $null }
+            Mock -CommandName Send-UDPMessage -ModuleName Posh-SYSLOG { $script:TestResult = $Datagram; return $null }
 
             It 'Should send RFC5424 formatted message with correct date format (10 to 31)' {
                 Mock -ModuleName Posh-SYSLOG Get-Date { return (New-Object datetime(2000,1,10)) }
 
                 $ExpectedResult = '<33>Jan 10 00:00:00 TestHostname Send-SyslogMessage.Tests.ps1 Test Syslog Message'
                 $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -RFC3164
-                $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
+                $Encoding.GetString($script:TestResult) | should be $ExpectedResult
             }
 
             It 'Should send RFC5424 formatted message with correct date format (1 to 9)' {
@@ -338,34 +338,34 @@ InModuleScope $script:ModuleName {
 
                 $ExpectedResult = '<33>Jan  1 00:00:00 TestHostname Send-SyslogMessage.Tests.ps1 Test Syslog Message'
                 $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -RFC3164
-                $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
+                $Encoding.GetString($script:TestResult) | should be $ExpectedResult
             }
         }
 
         Context 'Send-SyslogMessage = RFC 5424 message format' {
-            Mock -CommandName Send-UDPMessage -ModuleName Posh-SYSLOG { $Global:TestResult = $Datagram; return $null }
+            Mock -CommandName Send-UDPMessage -ModuleName Posh-SYSLOG { $script:TestResult = $Datagram; return $null }
 
             It 'Should send RFC5424 formatted message' {
                 $ExpectedResult = '<33>1 {0} TestHostname Send-SyslogMessage.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
                 $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'
-                $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
+                $Encoding.GetString($script:TestResult) | should be $ExpectedResult
             }
         }
 
         Context 'Send-SyslogMessage = Message Length UDP' {
-            Mock -CommandName Send-UDPMessage -ModuleName Posh-SYSLOG { $Global:TestResult = $Datagram; return $null }
+            Mock -CommandName Send-UDPMessage -ModuleName Posh-SYSLOG { $script:TestResult = $Datagram; return $null }
 
             $LongMsg = 'This is a very long syslog message. 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890'
 
             It 'truncates RFC 5424 messages to 2k' {
                 $ExpectedResult = ('<33>1 {0} TestHostname Send-SyslogMessage.Tests.ps1 {1} - - {2}' -f $ExpectedTimeStamp, $PID, $LongMsg).Substring(0,2048)
                 $null = Send-SyslogMessage -Server '127.0.0.1' -Message $LongMsg -Severity 'Alert' -Facility 'auth'
-                $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
+                $Encoding.GetString($script:TestResult) | should be $ExpectedResult
             }
             It 'truncates RFC 3164 messages to 1k' {
                 $ExpectedResult = ('<33>Jan  1 00:00:00 TestHostname Send-SyslogMessage.Tests.ps1 {1}' -f $ExpectedTimeStamp, $LongMsg).Substring(0,1024)
                 $null = Send-SyslogMessage -Server '127.0.0.1' -Message $LongMsg -Severity 'Alert' -Facility 'auth' -RFC3164
-                $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
+                $Encoding.GetString($script:TestResult) | should be $ExpectedResult
             }
         }
 
@@ -378,26 +378,26 @@ InModuleScope $script:ModuleName {
                 $FramedResult = '2048 {0}' -f $ExpectedResult
 
                 $null = Send-SyslogMessage -Server '127.0.0.1' -Message $LongMsg -Severity 'Alert' -Facility 'auth' -Transport TCP
-                $Encoding.GetString($Global:TestResult) | should be $FramedResult
+                $Encoding.GetString($script:TestResult) | should be $FramedResult
             }
             It 'truncates RFC 3164 messages to 1k' {
                 $ExpectedResult = ('<33>Jan  1 00:00:00 TestHostname Send-SyslogMessage.Tests.ps1 {1}' -f $ExpectedTimeStamp, $LongMsg).Substring(0,1024)
                 $FramedResult = '1024 {0}' -f $ExpectedResult
 
                 $null = Send-SyslogMessage -Server '127.0.0.1' -Message $LongMsg -Severity 'Alert' -Facility 'auth' -RFC3164 -Transport TCP
-                $Encoding.GetString($Global:TestResult) | should be $FramedResult
+                $Encoding.GetString($script:TestResult) | should be $FramedResult
             }
         }
 
         Context 'Send-SyslogMessage = TCP Specific Tests' {
-            #Mock -CommandName Send-TCPMessage -ModuleName Posh-SYSLOG { $Global:TestResult = $Datagram; return $null }
+            #Mock -CommandName Send-TCPMessage -ModuleName Posh-SYSLOG { $script:TestResult = $Datagram; return $null }
 
             It 'sends using TCP transport' {
                 $ExpectedResult = '<33>1 {0} TestHostname Send-SyslogMessage.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
                 $FramedResult = '{0} {1}' -f $ExpectedResult.Length, $ExpectedResult
 
                 $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname TestHostname -Transport TCP
-                $Encoding.GetString($Global:TestResult) | should be $FramedResult
+                $Encoding.GetString($script:TestResult) | should be $FramedResult
             }
 
             It 'sends using TCP transport with Octet-Counting as the framing' {
@@ -405,40 +405,40 @@ InModuleScope $script:ModuleName {
                 $FramedResult = '{0} {1}' -f $ExpectedResult.Length, $ExpectedResult
 
                 $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname TestHostname -Transport TCP -FramingMethod Octet-Counting
-                $Encoding.GetString($Global:TestResult) | should be $FramedResult
+                $Encoding.GetString($script:TestResult) | should be $FramedResult
             }
             It 'sends using TCP transport with Non-Transparent-Framing as the framing' {
                 $ExpectedResult = '<33>1 {0} TestHostname Send-SyslogMessage.Tests.ps1 {1} - - Test Syslog Message{2}' -f $ExpectedTimeStamp, $PID, "`n"
                 $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname TestHostname -Transport TCP -FramingMethod Non-Transparent-Framing
-                $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
+                $Encoding.GetString($script:TestResult) | should be $ExpectedResult
             }
 
             It 'sends using TCP transport with no framing' {
                 $ExpectedResult = '<33>1 {0} TestHostname Send-SyslogMessage.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
                 $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -Hostname TestHostname -Transport TCP -FramingMethod None
-                $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
+                $Encoding.GetString($script:TestResult) | should be $ExpectedResult
             }
 
         }
 
         Context 'Send-SyslogMessage = Application Name Selection' {
-            #Mock -CommandName Send-UDPMessage -ModuleName Posh-SYSLOG { $Global:TestResult = $Datagram; return $null }
+            #Mock -CommandName Send-UDPMessage -ModuleName Posh-SYSLOG { $script:TestResult = $Datagram; return $null }
 
             It 'Takes an Application Name as specified' {
                 $ExpectedResult = '<33>1 {0} TestHostname SomeRandomName {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
                 $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth' -ApplicationName 'SomeRandomName'
-                $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
+                $Encoding.GetString($script:TestResult) | should be $ExpectedResult
             }
 
             It 'uses myInvocation.ScriptName if one is available' {
                 $ExpectedResult = '<33>1 {0} TestHostname Send-SyslogMessage.Tests.ps1 {1} - - Test Syslog Message' -f $ExpectedTimeStamp, $PID
                 $null = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'
-                $Encoding.GetString($Global:TestResult) | should be $ExpectedResult
+                $Encoding.GetString($script:TestResult) | should be $ExpectedResult
             }
         }
 
         Context 'Send-SyslogMessage = Generic Tests' {
-            #Mock -CommandName Send-UDPMessage -ModuleName Posh-SYSLOG { $Global:TestResult = $Datagram; return $null }
+            #Mock -CommandName Send-UDPMessage -ModuleName Posh-SYSLOG { $script:TestResult = $Datagram; return $null }
 
             It 'does not return any values' {
                 $TestCase = Send-SyslogMessage -Server '127.0.0.1' -Message 'Test Syslog Message' -Severity 'Alert' -Facility 'auth'
