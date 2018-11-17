@@ -16,7 +16,7 @@
         .OUTPUTS
         Returns a System.Net.Sockets.TCPClient
     #>
-    
+
     [CmdletBinding()]
     [OutputType([System.Net.Sockets.TcpClient])]
     param
@@ -38,12 +38,13 @@
     )
 
     # Create a TCP client Object
-    Try 
+    Try
     {
         $TcpClient = New-Object -TypeName System.Net.Sockets.TcpClient
         $TcpClient.Connect($Server, $Port)
+        Write-debug -message ('TCP Connection to {0}:{1} established' -f $server, $port)
     }
-    Catch 
+    Catch
     {
         Throw $_
     }

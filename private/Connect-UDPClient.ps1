@@ -38,12 +38,13 @@
     )
 
     # Create a UDP client Object
-    Try 
+    Try
     {
         $UDPCLient = New-Object -TypeName System.Net.Sockets.UdpClient
         $UDPCLient.Connect($Server, $Port)
+        Write-debug -message ('UDP Connection to {0}:{1} established' -f $server, $port)
     }
-    Catch 
+    Catch
     {
         Throw $_
     }
