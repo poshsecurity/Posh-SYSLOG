@@ -42,6 +42,15 @@ public enum Syslog_Severity
 }
 "@
 
+Add-Type -TypeDefinition @"
+public enum Syslog_Protocol
+{
+    UDP,
+    TCP,
+    TCPwithTLS
+}
+"@
+
 Function Send-SyslogMessage
 {
     <#
@@ -147,8 +156,9 @@ Function Send-SyslogMessage
         [Parameter(Mandatory = $false,
                    ValueFromPipelineByPropertyName  = $false)]
         [ValidateNotNullOrEmpty()]
-        [ValidateSet('UDP','TCP', 'TCPwithTLS')]
-        [String]
+        #[ValidateSet('UDP','TCP', 'TCPwithTLS')]
+        #[String]
+        [Syslog_Protocol]
         $Transport = 'UDP',
 
         #ProcessID or PID of generator of message. Will automatically use $PID global variable. If you want to override this and send null, specify '-' to meet RFC 5424 rquirements.
@@ -233,13 +243,13 @@ Function Send-SyslogMessage
         $DoNotValidateTLSCertificate,
 
         #Send an RFC3164 fomatted message instead of RFC5424.
-        [Parameter(Mandatory = $false,
+        [Parameter(Mandatory = $true,
                    ValueFromPipelineByPropertyName  = $true,
                    ParameterSetName = 'RFC3164-UDP')]
-        [Parameter(Mandatory = $false,
+        [Parameter(Mandatory = $true,
                    ValueFromPipelineByPropertyName  = $true,
                    ParameterSetName = 'RFC3164-TCP')]
-        [Parameter(Mandatory = $false,
+        [Parameter(Mandatory = $true,
                    ValueFromPipelineByPropertyName  = $true,
                    ParameterSetName = 'RFC3164-TLS')]
         [switch]
