@@ -33,7 +33,7 @@
         $UseTLS,
 
         # Server Hostname to validate against the certificate presented during TLS validation
-        [Parameter(Mandatory        = $false,
+        [Parameter(Mandatory        = $true,
                    ParameterSetName = 'UseTLS')]
         [string]
         $ServerHostname,
