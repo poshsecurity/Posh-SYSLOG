@@ -1,5 +1,7 @@
 # Posh-SYSLOG
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/108fce1968bc40e689ef8053bc3d1e78)](https://app.codacy.com/app/kjacobsen/Posh-SYSLOG?utm_source=github.com&utm_medium=referral&utm_content=poshsecurity/Posh-SYSLOG&utm_campaign=Badge_Grade_Dashboard)
+
 ![Build Status](https://build.status.url.here)
 
 ## Description
