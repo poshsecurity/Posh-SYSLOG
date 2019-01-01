@@ -1,6 +1,6 @@
 # Posh-SYSLOG
 
-![Build Status](https://build.status.url.here)
+[![Build status](https://dev.azure.com/poshsecurity/PowerShell/_apis/build/status/Posh-SYSLOG-Build)](https://dev.azure.com/poshsecurity/PowerShell/_build/latest?definitionId=8)
 
 ## Description
 
@@ -50,7 +50,7 @@ PS> Uninstall-Module -Name Posh-SYSLOG
 
 Interested in contributing? Read how you can [Contribute](contributing.md) to Posh-SYSLOG
 
-This project maintains a [Code of Conduct](code-of-conduct.md) that establishes how the project is governed and how everyone involved is expected to behave. You can report unacceptable behavior to [Developer@PowerShellis.Cool](mailto:Developer@PowerShellis.Cool).
+This project maintains a [Code of Conduct](code-of-conduct.md) that establishes how the project is governed and how everyone involved is expected to behave. You can report unacceptable behavior to [code@poshsecurity.com](mailto:code@poshsecurity.com).
 
 ## Release History
 
