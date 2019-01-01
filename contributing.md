@@ -8,7 +8,7 @@ Here are some guidelines for contributing to this project. They are not hard rul
 
 This project maintains a [code of conduct](code-of-conduct.md) that establishes how the project is governed and how everyone involved is expected to behave.
 
-You can report unacceptable behavior to [Developer@PowerShellis.Cool](mailto:Developer@PowerShellis.Cool).
+You can report unacceptable behavior to [code@poshsecurity.com](mailto:code@poshsecurity.com).
 
 ## TL;DR
 
@@ -102,7 +102,7 @@ Here are a few guidelines that should be followed:
 * Ensure that there are no errors or warnings with PowerShell Script Analyzer
 * Any new code needs to have tests created:
   * Bug fixes: Consider test cases that would have failed before the change but pass now.
-    * New features: Test cases need to ensure that new features function correctly and existing features still function as previously expected.
+  * New features: Test cases need to ensure that new features function correctly and existing features still function as previously expected.
 * Ensure that any code you write aligns with community style guides.
 * Don't include issue numbers in the PR title.
 * Ensure that your branch is up-to-date to reduce the merge conflicts that could occur.
