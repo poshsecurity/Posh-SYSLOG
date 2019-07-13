@@ -13,7 +13,7 @@
             1.  FQDN
             2.  Static IP address
             3.  Hostname - Windows always has one of these, so this is our last resort
-            4.  Dynamic IP address - We will never get to this one
+            4.  Dynamic IP address - We shouldn't get to this one (maybe on a weird Linux configuration?)
             5.  the NILVALUE - or this one
 
         Windows should always, in the worst case, have a result at 3, the hostname or computer name from which this command is run.
@@ -38,42 +38,68 @@
         $Socket
     )
 
-    # Get the Win32_ComputerSystem object
-    $Win32_ComputerSystem =  Get-CimInstance -ClassName win32_computersystem
+    # Ask the appropriate client what the local endpoint address is
+    $LocalEndPoint = $Socket.LocalEndpoint.Address.IPAddressToString
 
-    if ($Win32_ComputerSystem.partofdomain) # If domain joined
+    # Get the Global IP Properties
+    $GlobalIPProperties = [System.Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties()
+
+    # Get the hostname
+    $Hostname = $GlobalIPProperties.HostName
+
+    # Get the list of all network interfaces
+    $Interfaces = [System.Net.NetworkInformation.NetworkInterface]::GetAllNetworkInterfaces()
+
+    # Get the Network Interface being used
+    $Interface = $Interfaces.Where({$_.GetIPProperties().UnicastAddresses.Address.IPAddressToString -contains $LocalEndPoint})
+
+    # If that Interface has a DNS Suffix, we will use that
+    if ($null -ne $Interface.GetIPProperties().DNSsuffix)
     {
-        # Use HOSTNAME Option 1 (FQDN), per RFC 5424 (section 6.2.4)
-        $Hostname = '{0}.{1}' -f $Win32_ComputerSystem.DNSHostname, $Win32_ComputerSystem.Domain
-
-        Write-Verbose -Message ('The machine is joined to an Active Directory domain, hostname value will be FQDN: {0}' -f $Hostname)
-    }
-    else
-    {
-        # Ask the appropriate client what the local endpoint address is
-        $LocalEndPoint = $Socket.LocalEndpoint.Address.IPAddressToString
-
-        # Get the adapter that the endpoint is assigned to
-        $NetworkAdapter = Get-NetworkAdapter -IPAddress $LocalEndPoint
-
-        # Is that local endpoint a statically assigned ip address?
-        if ($NetworkAdapter.PrefixOrigin -eq 'Manual')
+        if ('' -ne $Interface.GetIPProperties().DNSsuffix)
         {
-            # Use HOSTNAME Option 2 (Static IP address), per RFC 5424 (section 6.2.4)
-            $Hostname = $LocalEndPoint
-
-            Write-Verbose -Message ('A statically assigned IP was detected as the source for the route to {0}, so the static IP ({1}) will be used as the HOSTNAME value.' -f $Socket.RemoteEndPoint.Address.IPAddressToString, $Hostname)
-        }
-        else
-        {
-            # Use HOSTNAME Option 3 (hostname), per RFC 5424 (section 6.2.4)
-            $Hostname = $Win32_ComputerSystem.dnshostname
-
-            Write-Verbose -Message ('The hostname ({0}) will be used as the HOSTNAME value.' -f $Hostname)
+            $SyslogHostname = '{0}.{1}' -f $Hostname, $Interface.GetIPProperties().DNSsuffix
+            Write-Verbose -Message 'Interface DNS Suffix'
+            return $SyslogHostname
         }
     }
 
-    Write-Debug -Message ('Get-SyslogHostname is returning value {0}' -f $Hostname)
+    # Do we have a Global DNS Suffix (AD join or specified in System Properties etc), we will use that
+    if ($null -ne $GlobalIPProperties.DomainName)
+    {
+        if ('' -ne $GlobalIPProperties.DomainName)
+        {
+            $SyslogHostname = '{0}.{1}' -f $Hostname, $GlobalIPProperties.DomainName
+            Write-Verbose -Message 'Global DNS Suffix'
+            return $SyslogHostname
+        }
+    }
 
-    $Hostname
+    # If the Interface is using a Static IP address, we use that
+    $UnicastAddress = $Interface.GetIPProperties().UnicastAddresses.Where{$_.PrefixOrigin -eq 'Manual'}
+    If ($UnicastAddress.count -ge 1)
+    {
+        $SyslogHostname = $UnicastAddress.Address.IPAddressToString
+        Write-Verbose -Message 'Static'
+        return $SyslogHostname
+    }
+
+    # If there is a hostname, we use that
+    if ($null -ne $Hostname)
+    {
+        $SyslogHostname = $Hostname
+        Write-Verbose -Message 'Hostname'
+        return $SyslogHostname
+    }
+
+    # Finally, Use the Dynamically assigned IP Address
+    $UnicastAddress = $Interface.GetIPProperties().UnicastAddresses.Where{$_.PrefixOrigin -eq 'Dhcp'}
+    If ($UnicastAddress.count -ge 1)
+    {
+        $SyslogHostname = $UnicastAddress.Address.IPAddressToString
+        Write-Verbose -Message 'DHCP'
+        return $SyslogHostname
+    }
+
+    throw 'Could not determine IP address'
 }
