@@ -24,9 +24,6 @@ InModuleScope $script:ModuleName {
         Mock -ModuleName Posh-SYSLOG -CommandName Get-Date -MockWith {
             return (New-Object datetime(2000,1,1))
         }
-        Mock -ModuleName Posh-SYSLOG -CommandName Get-CimInstance -MockWith {
-            return @{partofdomain = $false; DNSHostname = 'TestHostname'}
-        }
         Mock -ModuleName Posh-SYSLOG -CommandName Connect-TCPClient -MockWith {
             return @{Client = New-Object -TypeName System.Net.Sockets.Socket -ArgumentList @([System.Net.Sockets.SocketType]::Stream, [System.Net.Sockets.ProtocolType]::Tcp)}
         }
@@ -44,9 +41,6 @@ InModuleScope $script:ModuleName {
         }
         Mock -ModuleName Posh-SYSLOG -CommandName Get-TCPWriter -MockWith {
             return (New-Object -TypeName System.IO.StreamWriter -ArgumentList  @([System.IO.Stream]::Null))
-        }
-        Mock -ModuleName Posh-SYSLOG -CommandName Get-NetworkAdapter -MockWith {
-            return $null
         }
         Mock -ModuleName Posh-SYSLOG -CommandName Get-SyslogHostname -MockWith {
             return 'TestHostname'
