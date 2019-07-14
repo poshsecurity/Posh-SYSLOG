@@ -51,7 +51,7 @@ InModuleScope $script:ModuleName {
         }
 
         It 'creates a TCP client' {
-            {Connect-TCPClient -Server '127.0.0.1' -Port 514} | should not be $null
+            {Connect-TCPClient -Server '127.0.0.1' -Port 514} | should be $null
         }
 
         $TCPListener.stop()
