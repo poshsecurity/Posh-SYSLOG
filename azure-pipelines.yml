@@ -71,8 +71,9 @@ steps:
 
 - powershell: |
    $env:PSModulePath = '$(Build.SourcesDirectory)\.buildmodules' + ';' + $env:PSModulePath
-   Invoke-Pester -Script $(build.artifactstagingdirectory)\$(Build.DefinitionName)\* -OutputFile $(Common.TestResultsDirectory)\Test-Pester.XML -OutputFormat NUnitXML
+   Invoke-Pester -Script $(build.artifactstagingdirectory)\$(Build.DefinitionName)\* -OutputFile $(Common.TestResultsDirectory)\Test-Pester.XML -OutputFormat NUnitXML -EnableExit
   workingDirectory: '$(build.artifactstagingdirectory)'
+  continueOnError: true
   displayName: 'Run Pester'
 
 - task: PublishTestResults@1
