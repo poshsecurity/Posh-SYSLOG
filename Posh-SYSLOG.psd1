@@ -12,7 +12,7 @@
 RootModule = 'Posh-SYSLOG.psm1'
 
 # Version number of this module.
-ModuleVersion = '4.0'
+ModuleVersion = '4.1'
 
 # ID used to uniquely identify this module
 GUID = '6c03881f-48f0-4a55-914d-a6ee33d019e7'
@@ -24,7 +24,7 @@ Author = 'Kieran Jacobsen'
 CompanyName = 'PoshSecurity.com'
 
 # Copyright statement for this module
-Copyright = '(c) 2018 Kieran Jacobsen. All rights reserved.'
+Copyright = '(c) 2019 Kieran Jacobsen. All rights reserved.'
 
 # Description of the functionality provided by this module
 Description = 'Send SYSLOG messages from PowerShell'
@@ -104,7 +104,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'Fixes issues reported by Athelu (congrats on your first issue!)'
+        ReleaseNotes = 'Fixes issues with PSCore, better resolution of hostnames. Note: WSL support is broken in this release unless PSCore 7-preview.'
     } # End of PSData hashtable
 
 } # End of PrivateData hashtable
