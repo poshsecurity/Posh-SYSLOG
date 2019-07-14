@@ -30,6 +30,7 @@ steps:
   displayName: 'Version PowerShell Modules'
   inputs:
     InjectVersion: true
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
 
 - task: CopyFiles@2
   displayName: 'Copy Files to: $(build.artifactstagingdirectory)\$(Build.DefinitionName)'
@@ -57,14 +58,6 @@ steps:
    Invoke-Pester -Script $(build.artifactstagingdirectory)\$(Build.DefinitionName)\* -OutputFile $(Common.TestResultsDirectory)\Test-Pester.XML -OutputFormat NUnitXML
   workingDirectory: '$(build.artifactstagingdirectory)'
   displayName: 'Run Pester'
-
-- task: Pester@8
-  displayName: 'Run Pester'
-  inputs:
-    scriptFolder: '$(build.artifactstagingdirectory)\$(Build.DefinitionName)\*'
-    resultsFile: '$(Common.TestResultsDirectory)\Test-Pester.XML'
-    additionalModulePath: '$(Build.SourcesDirectory)\.buildmodules'
-    run32Bit: False
 
 - task: PublishTestResults@1
   displayName: 'Publish Test Results'
