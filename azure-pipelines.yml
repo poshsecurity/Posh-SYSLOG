@@ -52,6 +52,12 @@ steps:
   workingDirectory: '$(build.artifactstagingdirectory)'
   displayName: 'Get Pester, PSScriptAnalyser, InjectionHunter '
 
+- powershell: |
+   $env:PSModulePath = '$(Build.SourcesDirectory)\.buildmodules' + ';' + $env:PSModulePath
+   Invoke-Pester -Script $(build.artifactstagingdirectory)\$(Build.DefinitionName)\* -OutputFile $(Common.TestResultsDirectory)\Test-Pester.XML -OutputFormat NUnitXML
+  workingDirectory: '$(build.artifactstagingdirectory)'
+  displayName: 'Run Pester'
+
 - task: Pester@8
   displayName: 'Run Pester'
   inputs:
