@@ -4,6 +4,12 @@ if (-not(Get-Module -ListAvailable -Name "PSScriptAnalyzer")) {
     Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
 }
 
+if (-not(Get-Module -ListAvailable -Name "InjectionHunter")) {
+    Write-Warning "Installing latest version of InjectionHunter"
+    # Install InjectionHunter
+    Install-Module InjectionHunter -Force -Scope CurrentUser
+}
+
 $script:ModuleName = 'Posh-SYSLOG'
 
 $ModuleBase = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -38,6 +44,30 @@ Describe "PSScriptAnalyzer rule-sets" -Tag Build , ScriptAnalyzer {
     }
 }
 
+Describe "InjectionHunter rule-sets" -Tag Build , ScriptAnalyzer {
+
+    $Module = Get-Module -Name InjectionHunter -ListAvailable
+    $InjectionHunterPath = Join-path -Path (Split-path -Path $Module.Path -Parent) -ChildPath 'InjectionHunter.psm1'
+
+    $Rules = Get-ScriptAnalyzerRule -CustomizedRulePath $InjectionHunterPath
+    $scripts = Get-ChildItem $ModuleBase -Include *.ps1, *.psm1, *.psd1 -Recurse | Where-Object fullname -notmatch 'classes'
+
+    foreach ( $Script in $scripts )
+    {
+        Context "Script '$($script.FullName)'" {
+
+            foreach ( $rule in $rules )
+            {
+                # Skip all rules that are on the exclusions list
+                if ($PesterTestExceptions -contains $rule.RuleName) { continue }
+                It "Rule [$rule]" {
+
+                    (Invoke-ScriptAnalyzer -Path $script.FullName -IncludeRule $rule.RuleName -CustomizedRulePath $InjectionHunterPath).Count | Should Be 0
+                }
+            }
+        }
+    }
+}
 
 Describe "General project validation: $moduleName" -Tags Build {
     BeforeAll {

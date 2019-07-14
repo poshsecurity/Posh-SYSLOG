@@ -26,25 +26,34 @@ InModuleScope $script:ModuleName {
         $TCPListener = New-Object System.Net.Sockets.TcpListener $TCPEndpoint
         $TCPListener.start()
 
+        Mock -ModuleName Posh-SYSLOG Get-GlobalIPProperty { return @{HostName = 'TestHostname'} }
+
         Context 'UDP Client Tests' {
             $UDPCLient = New-Object -TypeName System.Net.Sockets.UdpClient
             $UDPCLient.Connect('127.0.0.1', '514')
 
-            It 'Uses the FQDN if the computer is domain joined' {
-                Mock -ModuleName Posh-SYSLOG Get-CimInstance { return @{partofdomain = $true; DNSHostname = 'TestHostname'; Domain = 'contoso.com'} }
+            It 'Uses the FQDN if the computer has dns suffix on a network' {
+                Mock -ModuleName Posh-SYSLOG Get-NetworkAdapterDnsSuffix { return 'contoso.com' }
                 $TestResult = Get-SyslogHostname -Socket $UDPCLient.Client
-                Mock -ModuleName Posh-SYSLOG Get-CimInstance { return @{partofdomain = $false; DNSHostname = 'TestHostname'} }
+                Mock -ModuleName Posh-SYSLOG Get-NetworkAdapterDnsSuffix { return '' }
+                $TestResult | Should Be 'TestHostname.contoso.com'
+            }
+
+            It 'Uses the FQDN if the computer is domain joined' {
+                Mock -ModuleName Posh-SYSLOG Get-GlobalIPProperty { return @{HostName = 'TestHostname'; DomainName = 'contoso.com'} }
+                $TestResult = Get-SyslogHostname -Socket $UDPCLient.Client
+                Mock -ModuleName Posh-SYSLOG Get-GlobalIPProperty { return @{HostName = 'TestHostname'} }
                 $TestResult | Should Be 'TestHostname.contoso.com'
             }
 
             It 'Uses a Static IP address, on the correct interface that the server is reached on, if no FQDN and not hostname specified' {
-                Mock -ModuleName Posh-SYSLOG Get-NetworkAdapter {return @{PrefixOrigin = 'Manual'}}
+                Mock -ModuleName Posh-SYSLOG Get-NetworkIPAddress {return @{PrefixOrigin = 'Manual'}}
                 $TestResult = Get-SyslogHostname -Socket $UDPCLient.Client
                 $TestResult | Should Be '127.0.0.1'
             }
 
             It 'Uses the Windows computer name, if no static ip or FQDN' {
-                Mock -ModuleName Posh-SYSLOG Get-NetworkAdapter {return $null}
+                Mock -ModuleName Posh-SYSLOG Get-NetworkIPAddress {return @{PrefixOrigin = 'Dhcp'}}
                 $TestResult = Get-SyslogHostname -Socket $UDPCLient.Client
                 $TestResult | Should Be 'TestHostname'
             }
@@ -54,21 +63,28 @@ InModuleScope $script:ModuleName {
             $TCPCLient = New-Object -TypeName System.Net.Sockets.TcpClient
             $TCPCLient.Connect('127.0.0.1', '514')
 
-            It 'Uses the FQDN if the computer is domain joined' {
-                Mock -ModuleName Posh-SYSLOG Get-CimInstance { return @{partofdomain = $true; DNSHostname = 'TestHostname'; Domain = 'contoso.com'} }
+            It 'Uses the FQDN if the computer has dns suffix on a network' {
+                Mock -ModuleName Posh-SYSLOG Get-NetworkAdapterDnsSuffix { return 'contoso.com' }
                 $TestResult = Get-SyslogHostname -Socket $TCPCLient.Client
-                Mock -ModuleName Posh-SYSLOG Get-CimInstance { return @{partofdomain = $false; DNSHostname = 'TestHostname'} }
+                Mock -ModuleName Posh-SYSLOG Get-NetworkAdapterDnsSuffix { return '' }
+                $TestResult | Should Be 'TestHostname.contoso.com'
+            }
+
+            It 'Uses the FQDN if the computer is domain joined' {
+                Mock -ModuleName Posh-SYSLOG Get-GlobalIPProperty { return @{HostName = 'TestHostname'; DomainName = 'contoso.com'} }
+                $TestResult = Get-SyslogHostname -Socket $TCPCLient.Client
+                Mock -ModuleName Posh-SYSLOG Get-GlobalIPProperty { return @{HostName = 'TestHostname'} }
                 $TestResult | Should Be 'TestHostname.contoso.com'
             }
 
             It 'Uses a Static IP address, on the correct interface that the server is reached on, if no FQDN and not hostname specified' {
-                Mock -ModuleName Posh-SYSLOG Get-NetworkAdapter {return @{PrefixOrigin = 'Manual'}}
+                Mock -ModuleName Posh-SYSLOG Get-NetworkIPAddress {return @{PrefixOrigin = 'Manual'}}
                 $TestResult = Get-SyslogHostname -Socket $TCPCLient.Client
                 $TestResult | Should Be '127.0.0.1'
             }
 
             It 'Uses the Windows computer name, if no static ip or FQDN' {
-                Mock -ModuleName Posh-SYSLOG Get-NetworkAdapter {return $null}
+                Mock -ModuleName Posh-SYSLOG Get-NetworkIPAddress {return @{PrefixOrigin = 'Dhcp'}}
                 $TestResult = Get-SyslogHostname -Socket $TCPCLient.Client
                 $TestResult | Should Be 'TestHostname'
             }

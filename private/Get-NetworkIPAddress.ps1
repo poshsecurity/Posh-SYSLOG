@@ -1,4 +1,4 @@
-﻿Function Get-NetworkAdapter
+﻿Function Get-NetworkIPAddress
 {
     <#
         .SYNOPSIS
@@ -32,13 +32,13 @@
     $LocalAdapters = [System.Net.NetworkInformation.NetworkInterface]::GetAllNetworkInterfaces()
     Write-Debug -Message ('Found {0} network interfaces' -f ($LocalAdapters.Count))
 
-    # Get the adapter that the endpoint is assigned to
-    $NetworkAdapter = $LocalAdapters.ForEach({$_.GetIPProperties().UnicastAddresses}).where({$_.address -eq $IPAddress})
+    # Find the Address
+    $Addresses = $LocalAdapters.ForEach({$_.GetIPProperties().UnicastAddresses}).where({$_.address -eq $IPAddress})
 
-    if ($NetworkAdapter.Count -ne 1)
+    if ($Addresses.Count -ne 1)
     {
         Throw 'Unable to find correct network adapter'
     }
 
-    $NetworkAdapter
+    $Addresses
 }
