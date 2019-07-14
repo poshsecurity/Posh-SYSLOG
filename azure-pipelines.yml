@@ -108,7 +108,7 @@ steps:
   displayName: 'GitHub release (create)'
   inputs:
     gitHubConnection: 'KJacobsen GitHub'
-    repositoryName: poshsecurity/AzurePublicIPAddresses
+    repositoryName: poshsecurity/Posh-SYSLOG
     tagSource: manual
     tag: '$(Build.BuildNumber)'
     title: 'Version $(Build.BuildNumber)'
