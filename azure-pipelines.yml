@@ -1,6 +1,22 @@
 pool:
   name: Hosted VS2017
 
+trigger:
+  batch: true
+  branches:
+    include:
+    - *
+  paths:
+    exclude:
+    - README.md
+
+pr:
+  branches:
+    include: [refs/heads/master]
+  paths:
+    exclude:
+    - README.md
+
 steps:
 - task: CopyFiles@2
   displayName: 'Copy Files to Staging Directory'
@@ -16,7 +32,7 @@ steps:
      *.psd1
      license.md
      readme.md
-     
+
     TargetFolder: '$(build.artifactstagingdirectory)\$(Build.DefinitionName)'
     CleanTargetFolder: true
 
@@ -42,11 +58,11 @@ steps:
 
 - powershell: |
    $BuildModuleFolder= '.buildmodules'
-   
+
    $null = New-Item -Name $BuildModuleFolder -Path $(Build.SourcesDirectory) -ItemType Directory
-   
+
    $PSModulePath = Join-Path -Path $(Build.SourcesDirectory) -ChildPath $BuildModuleFolder
-   
+
    Save-Module -Name Pester -Path $PSModulePath
    Save-Module -Name PSScriptAnalyzer -Path $PSModulePath
    Save-Module -Name InjectionHunter -Path $PSModulePath
@@ -75,18 +91,18 @@ steps:
    git status --verbose
    "----"
    git add $(Build.DefinitionName).psd1
-   git commit -m "Updated version in psd1 ***NO_CI***" 
+   git commit -m "Updated version in psd1 ***NO_CI***"
    "----"
    git status --verbose
    "----"
    git push (('$(Build.Repository.Uri)').replace('https://', 'https://$(GitHubPat)@') + '.git') HEAD:$(Build.SourceBranchName) --verbose
    "----"
   workingDirectory: '$(Build.SourcesDirectory)'
-  displayName: 'PowerShell Script'
+  displayName: 'Update PSD1 in Git'
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
 
 - powershell: 'Publish-Module -Path $(build.artifactstagingdirectory)\$(Build.DefinitionName) -NuGetAPIKey $(PowerShellGalleryNuGet)'
-  displayName: 'PowerShell Script'
+  displayName: 'Publish to Gallery'
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
 
 - task: ArchiveFiles@2
