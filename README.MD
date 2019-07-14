@@ -3,8 +3,9 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/108fce1968bc40e689ef8053bc3d1e78)](https://app.codacy.com/app/kjacobsen/Posh-SYSLOG?utm_source=github.com&utm_medium=referral&utm_content=poshsecurity/Posh-SYSLOG&utm_campaign=Badge_Grade_Dashboard)
 [![Build Status](https://dev.azure.com/poshsecurity/PowerShell/_apis/build/status/Posh-SYSLOG?branchName=master)](https://dev.azure.com/poshsecurity/PowerShell/_build/latest?definitionId=40&branchName=master)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
-![PowerShell Gallery](https://img.shields.io/powershellgallery/v/posh-syslog.svg)
-![PowerShell Gallery](https://img.shields.io/powershellgallery/dt/posh-syslog.svg)
+[![PowerShell Gallery](https://img.shields.io/powershellgallery/v/posh-syslog.svg)](https://www.powershellgallery.com/packages/Posh-SYSLOG)
+[![PowerShell Gallery](https://img.shields.io/powershellgallery/p/posh-syslog.svg)](https://www.powershellgallery.com/packages/Posh-SYSLOG)
+[![PowerShell Gallery](https://img.shields.io/powershellgallery/dt/posh-syslog.svg)](https://www.powershellgallery.com/packages/Posh-SYSLOG)
 
 ## Description
 
