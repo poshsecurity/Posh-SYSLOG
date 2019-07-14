@@ -1,0 +1,118 @@
+pool:
+  name: Hosted VS2017
+
+steps:
+- task: CopyFiles@2
+  displayName: 'Copy Files to Staging Directory'
+  inputs:
+    Contents: |
+     **\public\**
+     **\private\**
+     **\functions\**
+     **\classes\**
+     **\tests\**
+     *.ps1
+     *.psm1
+     *.psd1
+     license.md
+     readme.md
+     
+    TargetFolder: '$(build.artifactstagingdirectory)\$(Build.DefinitionName)'
+    CleanTargetFolder: true
+
+- task: gittools.gitversion.gitversion-task.GitVersion@4
+  displayName: GitVersion
+  inputs:
+    preferBundledVersion: false
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+
+- task: richardfennellBM.BM-VSTS-Versioning-Task.Version-PowerShellModule-Task.VersionPowerShellModule@2
+  displayName: 'Version PowerShell Modules'
+  inputs:
+    InjectVersion: true
+
+- task: CopyFiles@2
+  displayName: 'Copy Files to: $(build.artifactstagingdirectory)\$(Build.DefinitionName)'
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)'
+    Contents: '*.psd1'
+    TargetFolder: '$(build.artifactstagingdirectory)\$(Build.DefinitionName)'
+    OverWrite: true
+
+- powershell: |
+   $BuildModuleFolder= '.buildmodules'
+   
+   $null = New-Item -Name $BuildModuleFolder -Path $(Build.SourcesDirectory) -ItemType Directory
+   
+   $PSModulePath = Join-Path -Path $(Build.SourcesDirectory) -ChildPath $BuildModuleFolder
+   
+   Save-Module -Name Pester -Path $PSModulePath
+   Save-Module -Name PSScriptAnalyzer -Path $PSModulePath
+   Save-Module -Name InjectionHunter -Path $PSModulePath
+  workingDirectory: '$(build.artifactstagingdirectory)'
+  displayName: 'Get Pester, PSScriptAnalyser, InjectionHunter '
+
+- task: richardfennellBM.BM-VSTS-PesterRunner-Task.Pester-Task.Pester@8
+  displayName: 'Run Pester'
+  inputs:
+    scriptFolder: '$(build.artifactstagingdirectory)\$(Build.DefinitionName)\*'
+    resultsFile: '$(Common.TestResultsDirectory)\Test-Pester.XML'
+    additionalModulePath: '$(Build.SourcesDirectory)\.buildmodules'
+
+- task: PublishTestResults@1
+  displayName: 'Publish Test Results'
+  inputs:
+    testRunner: NUnit
+    testResultsFiles: '$(Common.TestResultsDirectory)\Test-Pester.XML'
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Artifact: drop'
+
+- powershell: |
+   git config user.email 'noreply@dev.azure.com'
+   git config user.name 'Azure DevOps'
+   "----"
+   git status --verbose
+   "----"
+   git add $(Build.DefinitionName).psd1
+   git commit -m "Updated version in psd1 ***NO_CI***" 
+   "----"
+   git status --verbose
+   "----"
+   git push (('$(Build.Repository.Uri)').replace('https://', 'https://$(GitHubPat)@') + '.git') HEAD:$(Build.SourceBranchName) --verbose
+   "----"
+  workingDirectory: '$(Build.SourcesDirectory)'
+  displayName: 'PowerShell Script'
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+
+- powershell: 'Publish-Module -Path $(build.artifactstagingdirectory)\$(Build.DefinitionName) -NuGetAPIKey $(PowerShellGalleryNuGet)'
+  displayName: 'PowerShell Script'
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+
+- task: ArchiveFiles@2
+  displayName: 'Create Zip'
+  inputs:
+    rootFolderOrFile: '$(build.artifactstagingdirectory)\$(Build.DefinitionName)'
+    archiveFile: '$(Build.ArtifactStagingDirectory)\$(Build.DefinitionName)_$(Build.BuildNumber).zip'
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+
+- task: ArchiveFiles@2
+  displayName: 'Create Tar'
+  inputs:
+    rootFolderOrFile: '$(build.artifactstagingdirectory)\$(Build.DefinitionName)'
+    archiveType: tar
+    archiveFile: '$(Build.ArtifactStagingDirectory)\$(Build.DefinitionName)_$(Build.BuildNumber).tar.gz'
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+
+- task: GitHubRelease@0
+  displayName: 'GitHub release (create)'
+  inputs:
+    gitHubConnection: 'KJacobsen GitHub'
+    repositoryName: poshsecurity/AzurePublicIPAddresses
+    tagSource: manual
+    tag: '$(Build.BuildNumber)'
+    title: 'Version $(Build.BuildNumber)'
+    assets: |
+     $(Build.ArtifactStagingDirectory)/*.zip
+     $(Build.ArtifactStagingDirectory)/*.tar.gz
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
