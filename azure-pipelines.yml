@@ -20,13 +20,13 @@ steps:
     TargetFolder: '$(build.artifactstagingdirectory)\$(Build.DefinitionName)'
     CleanTargetFolder: true
 
-- task: gittools.gitversion.gitversion-task.GitVersion@4
+- task: GitVersion@4
   displayName: GitVersion
   inputs:
     preferBundledVersion: false
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
 
-- task: richardfennellBM.BM-VSTS-Versioning-Task.Version-PowerShellModule-Task.VersionPowerShellModule@2
+- task: VersionPowerShellModule@2
   displayName: 'Version PowerShell Modules'
   inputs:
     InjectVersion: true
@@ -52,12 +52,13 @@ steps:
   workingDirectory: '$(build.artifactstagingdirectory)'
   displayName: 'Get Pester, PSScriptAnalyser, InjectionHunter '
 
-- task: richardfennellBM.BM-VSTS-PesterRunner-Task.Pester-Task.Pester@8
+- task: Pester@8
   displayName: 'Run Pester'
   inputs:
     scriptFolder: '$(build.artifactstagingdirectory)\$(Build.DefinitionName)\*'
     resultsFile: '$(Common.TestResultsDirectory)\Test-Pester.XML'
     additionalModulePath: '$(Build.SourcesDirectory)\.buildmodules'
+    run32Bit: False
 
 - task: PublishTestResults@1
   displayName: 'Publish Test Results'
