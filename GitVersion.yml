@@ -1,0 +1,2 @@
+mode: mainline
+no-bump-message: '\s?NO_CI'
