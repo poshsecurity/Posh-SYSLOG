@@ -12,7 +12,7 @@
 RootModule = 'Posh-SYSLOG.psm1'
 
 # Version number of this module.
-ModuleVersion = '4.1.0'
+ModuleVersion = '4.1.3'
 
 # ID used to uniquely identify this module
 GUID = '6c03881f-48f0-4a55-914d-a6ee33d019e7'
@@ -116,5 +116,6 @@ PrivateData = @{
 # DefaultCommandPrefix = ''
 
 }
+
 
 
