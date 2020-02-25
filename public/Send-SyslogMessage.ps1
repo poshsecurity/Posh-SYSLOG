@@ -165,6 +165,9 @@ Function Send-SyslogMessage
         [Parameter(Mandatory                        = $false,
                    ValueFromPipelineByPropertyName  = $true,
                    ParameterSetName                 = 'RFC5424')]
+        [Parameter(Mandatory                        = $false,
+                   ValueFromPipelineByPropertyName  = $true,
+                   ParameterSetName                 = 'RFC3164')]
         [ValidateNotNullOrEmpty()]
         [String]
         $ProcessID = $PID,
@@ -341,7 +344,12 @@ Function Send-SyslogMessage
                 }
 
                 # Assemble the full syslog formatted Message
-                $FullSyslogMessage = '<{0}>{1} {2} {3} {4}' -f $Priority, $FormattedTimestamp, $Hostname, $ApplicationName, $Message
+                if($ProcessID){
+                    $FullSyslogMessage = '<{0}>{1} {2} {3}[{4]}]: {5}' -f $Priority, $FormattedTimestamp, $Hostname, $ApplicationName, $ProcessID, $Message
+                }
+                else{
+                    $FullSyslogMessage = '<{0}>{1} {2} {3}: {5}' -f $Priority, $FormattedTimestamp, $Hostname, $ApplicationName, $Message
+                }
 
                 # Set the max message length per RFC 3164 section 4.1
                 $MaxLength = 1024
